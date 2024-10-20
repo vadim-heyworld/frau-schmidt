@@ -64,6 +64,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           project-name: ${{ github.event.repository.name }}
+          openai-model: 'gpt-4o-mini'
 ```
 
 

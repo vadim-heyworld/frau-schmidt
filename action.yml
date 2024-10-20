@@ -10,6 +10,9 @@ inputs:
   project-name:
     description: "Name of the project (for project-specific prompts)"
     required: true
+  openai-model:
+    description: "OpenAI model to use"
+    required: true
 runs:
   using: "node20"
   main: "dist/index.js"
