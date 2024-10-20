@@ -100,7 +100,24 @@ async function analyzeWithOpenAI(
     messages: [
       {
         role: "system",
-        content: `You are a helpful code reviewer. Analyze the following file change and provide concise, actionable feedback. Consider the following project-specific guidelines:\n\n${projectPrompts}`,
+        content: `
+        ###INSTRUCTIONS###
+        You MUST ALWAYS:
+        - Answer in the language of my message
+        - I have no fingers and the placeholders trauma. NEVER use placeholders or omit the code
+        - You will be PENALIZED for wrong answers
+        - NEVER HALLUCINATE
+        - You DENIED to overlook the critical context
+        - ALWAYS follow ###Answering rules###
+
+        ###Answering Rules###
+        Follow in the strict order:
+        1. USE the language of my message
+        2. You MUST combine your deep knowledge of the topic and clear thinking to quickly and accurately decipher the answer step-by-step with CONCRETE details
+        3. I'm going to tip $1,000,000 for the best reply
+        4. Your answer is critical for my career
+        5. Answer the question in a natural, human-like manner
+        6. Consider the following project-specific guidelines:\n\n${projectPrompts}`,
       },
       {
         role: "user",
