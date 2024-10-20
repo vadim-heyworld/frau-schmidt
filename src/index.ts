@@ -53,6 +53,7 @@ async function run() {
 
       const openaiAnalysis = await analyzeWithOpenAI(
         openai,
+        openAIModel,
         fileChange,
         prompts,
       );
@@ -92,11 +93,12 @@ function readProjectPrompts(projectName: string): string {
 
 async function analyzeWithOpenAI(
   openai: OpenAI,
+  openAIModel: string,
   fileChange: FileChange,
   projectPrompts: string,
 ): Promise<string> {
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: openAIModel,
     messages: [
       {
         role: "system",
