@@ -1,6 +1,15 @@
 name: "AI PR Review"
 description: "Reviews PRs using AI APIs"
 inputs:
+  app-id:
+    description: "GitHub App ID"
+    required: true
+  private-key:
+    description: "GitHub App private key"
+    required: true
+  installation-id:
+    description: "GitHub App installation ID"
+    required: true
   github-token:
     description: "GitHub token"
     required: true

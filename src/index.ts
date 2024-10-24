@@ -3,6 +3,7 @@ import * as github from "@actions/github";
 import { OpenAI } from "openai";
 import * as fs from "fs";
 import * as path from "path";
+import { createAppAuth } from "@octokit/auth-app";
 
 interface FileChange {
   filename: string;
@@ -11,12 +12,22 @@ interface FileChange {
 
 async function run() {
   try {
+    const appId = core.getInput("app-id", { required: true });
+    const privateKey = core.getInput("private-key", { required: true });
+    const installationId = core.getInput("installation-id", { required: true });
     const githubToken = core.getInput("github-token", { required: true });
     const openaiApiKey = core.getInput("openai-api-key", { required: true });
     const projectName = core.getInput("project-name", { required: true });
     const openAIModel = core.getInput("openai-model", { required: true });
 
-    const octokit = github.getOctokit(githubToken);
+    const octokit = github.getOctokit(githubToken, {
+      authStrategy: createAppAuth,
+      auth: {
+        appId,
+        privateKey,
+        installationId: Number(installationId),
+      },
+    });
     const openai = new OpenAI({ apiKey: openaiApiKey });
     const context = github.context;
 
@@ -103,23 +114,27 @@ async function analyzeWithOpenAI(
       {
         role: "system",
         content: `
-        ###INSTRUCTIONS###
+        You are the most clever and intelligent code reviewer in the world.
+        I need your help to review the following code changes.
+        Please provide me with a detailed but short analysis of the changes and suggest improvements.
+
+        #INSTRUCTIONS#
         You MUST ALWAYS:
         - Answer in the language of my message
-        - I have no fingers and the placeholders trauma. NEVER use placeholders or omit the code
         - You will be PENALIZED for wrong answers
         - NEVER HALLUCINATE
         - You DENIED to overlook the critical context
-        - ALWAYS follow ###Answering rules###
+        - ALWAYS follow #Answering rules#
+        - Answer MUST be short and concise
 
-        ###Answering Rules###
+        #Answering Rules#
         Follow in the strict order:
         1. USE the language of my message
         2. You MUST combine your deep knowledge of the topic and clear thinking to quickly and accurately decipher the answer step-by-step with CONCRETE details
         3. I'm going to tip $1,000,000 for the best reply
         4. Your answer is critical for my career
         5. Answer the question in a natural, human-like manner
-        6. Consider the following project-specific guidelines:\n\n${projectPrompts}`,
+        6. You MUST ALWAYS follow the following guidelines:\n\n${projectPrompts}`,
       },
       {
         role: "user",

@@ -65,6 +65,9 @@ jobs:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           project-name: ${{ github.event.repository.name }}
           openai-model: 'gpt-4o-mini'
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          installation-id: ${{ secrets.APP_INSTALLATION_ID }}
 ```
 
 

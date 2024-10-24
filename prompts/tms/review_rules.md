@@ -1,3 +1,5 @@
+YOU MUST READ AND FOLLOW THIS BEFORE YOU START REVIEWING PRs
+
 # PR review Guidelines
 ## Tags
 To make it more clear what a comment is about and how important it is, we add tags to comments. The commonly used tags are (please try to refrain from using any other tags).
@@ -8,6 +10,8 @@ The tags minor, medium and major are mandatory where applicable, the others are 
 [discussion] - Could be an issue or not. Other reviewers' opinion is requested on this one.
 [question] - Question that has to be answered by the author. Usually a PR shouldn’t be approved as long as open questions are there.
 [task] - Added after a comment. Tells the author what to do. Should always be there for comments that entail a changes requested. When the author has done the task he/she adds a comment saying so (done, resolved, checkmark etc).
+
+YOU MUST USE THE TAGS FOR THE PR COMMENTS
 
 ## PR size
 PRs may not be larger than 30 files. Optimally they include no more than 20 files. Should a PR require more files to be changed then a reason has to be given as well as still trying to keep the PR as small as possible.
