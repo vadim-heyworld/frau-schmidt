@@ -20,7 +20,7 @@ async function run() {
     const projectName = core.getInput("project-name", { required: true });
     const openAIModel = core.getInput("openai-model", { required: true });
 
-    const octokit = github.getOctokit(githubToken, {
+    const octokit = github.getOctokit("", {
       authStrategy: createAppAuth,
       auth: {
         appId,
