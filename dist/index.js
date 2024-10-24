@@ -35676,8 +35676,8 @@ function run() {
             const octokit = github.getOctokit("", {
                 authStrategy: auth_app_1.createAppAuth,
                 auth: {
-                    appId,
-                    privateKey,
+                    appId: appId,
+                    privateKey: privateKey,
                     installationId: Number(installationId),
                 },
             });
