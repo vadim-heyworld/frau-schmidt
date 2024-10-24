@@ -22,8 +22,8 @@ async function run() {
     const octokit = github.getOctokit("", {
       authStrategy: createAppAuth,
       auth: {
-        appId,
-        privateKey,
+        appId: appId,
+        privateKey: privateKey,
         installationId: Number(installationId),
       },
     });
