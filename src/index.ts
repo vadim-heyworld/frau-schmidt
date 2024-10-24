@@ -15,12 +15,11 @@ async function run() {
     const appId = core.getInput("app-id", { required: true });
     const privateKey = core.getInput("private-key", { required: true });
     const installationId = core.getInput("installation-id", { required: true });
-    const githubToken = core.getInput("github-token", { required: true });
     const openaiApiKey = core.getInput("openai-api-key", { required: true });
     const projectName = core.getInput("project-name", { required: true });
     const openAIModel = core.getInput("openai-model", { required: true });
 
-    const octokit = github.getOctokit(githubToken, {
+    const octokit = github.getOctokit("", {
       authStrategy: createAppAuth,
       auth: {
         appId,
