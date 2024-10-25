@@ -12,9 +12,25 @@ interface FileChange {
 
 async function run() {
   try {
-    const appId = core.getInput("app-id", { required: true });
+    const appId = parseInt(core.getInput("app-id", { required: true }));
+    if (isNaN(appId)) {
+      throw new Error(
+        "app-id must be a valid number, but provided the following: " + appId,
+      );
+    }
+
     const privateKey = core.getInput("private-key", { required: true });
-    const installationId = core.getInput("installation-id", { required: true });
+
+    const installationId = parseInt(
+      core.getInput("installation-id", { required: true }),
+    );
+    if (isNaN(installationId)) {
+      throw new Error(
+        "installation-id must be a valid number, but provided the following: " +
+          installationId,
+      );
+    }
+
     const openaiApiKey = core.getInput("openai-api-key", { required: true });
     const projectName = core.getInput("project-name", { required: true });
     const openAIModel = core.getInput("openai-model", { required: true });
