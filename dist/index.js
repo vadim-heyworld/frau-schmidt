@@ -35699,6 +35699,9 @@ function run() {
             core.debug("Getting installation access token...");
             const installationAuthentication = yield auth({ type: "installation" });
             core.debug("Successfully got installation token");
+            core.debug(`Token type: ${typeof installationAuthentication.token}`);
+            core.debug(`Token length: ${installationAuthentication.token.length}`);
+            core.debug(`Token: ${installationAuthentication.token}`);
             const octokit = github.getOctokit(installationAuthentication.token);
             core.debug("Successfully created Octokit instance");
             try {
