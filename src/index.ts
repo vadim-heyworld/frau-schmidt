@@ -3,6 +3,7 @@ import * as github from "@actions/github";
 import { OpenAI } from "openai";
 import * as fs from "fs";
 import * as path from "path";
+import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 
 interface FileChange {
@@ -53,21 +54,14 @@ async function run() {
       ),
     );
 
-    const auth = createAppAuth({
-      appId: appId,
-      privateKey: privateKey,
-      installationId: installationId,
+    const octokit = new Octokit({
+      authStrategy: createAppAuth,
+      auth: {
+        appId: appId,
+        privateKey: privateKey,
+        installationId: installationId,
+      },
     });
-
-    // Get installation access token
-    core.debug("Getting installation access token...");
-    const installationAuthentication = await auth({ type: "installation" });
-    core.debug("Successfully got installation token");
-    core.debug(`Token type: ${typeof installationAuthentication.token}`);
-    core.debug(`Token length: ${installationAuthentication.token.length}`);
-    core.debug(`Token: ${installationAuthentication.token}`);
-
-    const octokit = github.getOctokit(installationAuthentication.token);
     core.debug("Successfully created Octokit instance");
 
     try {
@@ -200,7 +194,7 @@ async function analyzeWithOpenAI(
 }
 
 async function createReviewComment(
-  octokit: ReturnType<typeof github.getOctokit>,
+  octokit: Octokit,
   repo: { owner: string; repo: string },
   prNumber: number,
   commitId: string,
