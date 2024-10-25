@@ -146,6 +146,9 @@ function readProjectPrompts(projectName: string): string {
     }
   }
 
+  // debug the file names that are being read
+  core.debug(`Reading prompts from: ${promptsDir}`);
+
   return combinedPrompts.trim();
 }
 
@@ -161,18 +164,16 @@ async function analyzeWithOpenAI(
       {
         role: "system",
         content: `
-        You are the most clever and intelligent code reviewer in the world.
+        You are the most clever and intelligent code reviewer in our team who follows all the provided guidelines.
         I need your help to review the following code changes.
-        Please provide me with a detailed but short analysis of the changes and suggest improvements.
 
         #INSTRUCTIONS#
-        You MUST ALWAYS:
-        - Answer in the language of my message
-        - You will be PENALIZED for wrong answers
-        - NEVER HALLUCINATE
-        - You DENIED to overlook the critical context
-        - ALWAYS follow #Answering rules#
-        - Answer MUST be short and concise
+        You:
+        - MUST always follow the guidelines:\n\n${projectPrompts}
+        - MUST NEVER HALLUCINATE
+        - DENIED to overlook the critical context
+        - MUST ALWAYS follow #Answering rules#
+        - MUST ALWAYS be short and to the point
 
         #Answering Rules#
         Follow in the strict order:
@@ -181,7 +182,8 @@ async function analyzeWithOpenAI(
         3. I'm going to tip $1,000,000 for the best reply
         4. Your answer is critical for my career
         5. Answer the question in a natural, human-like manner
-        6. You MUST ALWAYS follow the following guidelines:\n\n${projectPrompts}`,
+        6. DONT provide unnecessary information
+        7. DONT tell me about the changes that were made by author, only analize the changes`,
       },
       {
         role: "user",
