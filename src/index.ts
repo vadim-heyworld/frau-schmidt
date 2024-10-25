@@ -118,7 +118,6 @@ async function run() {
             commitId,
             file.filename,
             comment.comment,
-            file.patch || "",
             comment.line,
           );
         }
@@ -164,15 +163,15 @@ async function analyzePRChanges(
 
         #INSTRUCTIONS#
         You:
-        - MUST provide comments in the following format:
-                  [LINE_NUMBER]: Comment text
-                  [LINE_NUMBER]: Another comment text
         - MUST always follow the guidelines:\n${projectPrompts}
         - MUST NEVER HALLUCINATE
-        - MUST NOT bring changes Overview
+        - MUST NOT bring changes overview, ONLY analyze the changes
         - DENIED to overlook the critical context
         - MUST ALWAYS follow #Answering rules#
         - MUST ALWAYS be short and to the point
+        - MUST provide comments in the following format:
+                  [LINE_NUMBER]: Comment text
+                  [LINE_NUMBER]: Another comment text
 
         #Answering Rules#
         Follow in the strict order:
@@ -228,7 +227,7 @@ async function analyzePRInfo(
         - PR MUST NOT be larger than 30 files.
         - Optimally they SHOULD include no more than 20 files.
         - Branch name MUST follow this naming rule: '<type>/<issue-key>-<description>', where type is either 'feature', 'bugfix' or 'other'
-        - Every commit MUST have a prefix with the corresponding issue key (exception when there is no ticket for a commit)
+        - Every commit MUST have a prefix with the corresponding issue key (exception when there is no ticket for a commit, but you SHOULD point it out in the review)
         - PR that change a small thing like a method or const name, but still affect a lot of files, MUST NOT include any other changes.
         - PR MUST focus on one thing, so no mixing refactoring with logic changes or refactoring with deletions.
         - Check if the PR description is adequate and provides necessary information
@@ -242,6 +241,8 @@ async function analyzePRInfo(
         PR Description:
         ${prDescription}
         Number of files changed: ${fileCount}
+        Branch name: ${branchName}
+        Commit messages: ${commitMessages.join(", ")}
         Please analyze the PR description and file count based on the provided guidelines.
         `,
       },
@@ -258,7 +259,6 @@ async function createReviewComment(
   commitId: string,
   path: string,
   body: string,
-  diff: string,
   line: number,
 ) {
   await octokit.rest.pulls.createReviewComment({

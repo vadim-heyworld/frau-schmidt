@@ -35721,7 +35721,7 @@ function run() {
                 const openaiAnalysis = yield analyzePRChanges(openai, openAIModel, fileChange, prompts);
                 if (openaiAnalysis.length > 0) {
                     for (const comment of openaiAnalysis) {
-                        yield createReviewComment(octokit, repo, prNumber, commitId, file.filename, comment.comment, file.patch || "", comment.line);
+                        yield createReviewComment(octokit, repo, prNumber, commitId, file.filename, comment.comment, comment.line);
                     }
                 }
             }
@@ -35758,15 +35758,15 @@ function analyzePRChanges(openai, openAIModel, fileChange, projectPrompts) {
 
         #INSTRUCTIONS#
         You:
-        - MUST provide comments in the following format:
-                  [LINE_NUMBER]: Comment text
-                  [LINE_NUMBER]: Another comment text
         - MUST always follow the guidelines:\n${projectPrompts}
         - MUST NEVER HALLUCINATE
-        - MUST NOT bring changes Overview
+        - MUST NOT bring changes overview, ONLY analyze the changes
         - DENIED to overlook the critical context
         - MUST ALWAYS follow #Answering rules#
         - MUST ALWAYS be short and to the point
+        - MUST provide comments in the following format:
+                  [LINE_NUMBER]: Comment text
+                  [LINE_NUMBER]: Another comment text
 
         #Answering Rules#
         Follow in the strict order:
@@ -35811,7 +35811,7 @@ function analyzePRInfo(openai, openAIModel, prDescription, fileCount, branchName
         - PR MUST NOT be larger than 30 files.
         - Optimally they SHOULD include no more than 20 files.
         - Branch name MUST follow this naming rule: '<type>/<issue-key>-<description>', where type is either 'feature', 'bugfix' or 'other'
-        - Every commit MUST have a prefix with the corresponding issue key (exception when there is no ticket for a commit)
+        - Every commit MUST have a prefix with the corresponding issue key (exception when there is no ticket for a commit, but you SHOULD point it out in the review)
         - PR that change a small thing like a method or const name, but still affect a lot of files, MUST NOT include any other changes.
         - PR MUST focus on one thing, so no mixing refactoring with logic changes or refactoring with deletions.
         - Check if the PR description is adequate and provides necessary information
@@ -35825,6 +35825,8 @@ function analyzePRInfo(openai, openAIModel, prDescription, fileCount, branchName
         PR Description:
         ${prDescription}
         Number of files changed: ${fileCount}
+        Branch name: ${branchName}
+        Commit messages: ${commitMessages.join(", ")}
         Please analyze the PR description and file count based on the provided guidelines.
         `,
                 },
@@ -35833,7 +35835,7 @@ function analyzePRInfo(openai, openAIModel, prDescription, fileCount, branchName
         return response.choices[0].message.content || "";
     });
 }
-function createReviewComment(octokit, repo, prNumber, commitId, path, body, diff, line) {
+function createReviewComment(octokit, repo, prNumber, commitId, path, body, line) {
     return __awaiter(this, void 0, void 0, function* () {
         yield octokit.rest.pulls.createReviewComment(Object.assign(Object.assign({}, repo), { pull_number: prNumber, commit_id: commitId, body,
             path,
