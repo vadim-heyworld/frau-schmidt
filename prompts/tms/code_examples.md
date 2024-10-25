@@ -8,9 +8,6 @@ declare(strict_types=1);
 
 namespace heyworld\ShippingOrderTest\Builder;
 
-use heyworld\ShippingOrder\Domain\Model\AirportLocation\AirportLocation;
-use heyworld\ShippingOrder\Domain\Model\ShippingOrder\AirportId;
-
 class AirportLocationBuilder
 {
     private AirportId $airportId;
@@ -71,11 +68,6 @@ class AirportLocationBuilder
             'trackingTime' => TrackingTime::fromString('2024-07-14'),
             'expected' => false,
         ];
-
-        yield 'German public holiday' => [
-            'trackingTime' => TrackingTime::fromString('2024-10-03'),
-            'expected' => false,
-        ];
     }
 ```
 
@@ -87,19 +79,6 @@ declare(strict_types=1);
 
 namespace heyworld\Configuration\Domain\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
-use EventEngine\JsonSchema\JsonSchema;
-use EventEngine\Schema\ResponseTypeSchema;
-use heyworld\Application\Domain\Model\DataTypes\Definitions\HeyworldImmutableRecord;
-use heyworld\Application\Domain\Model\DataTypes\HeyworldImmutableRecordLogic;
-use heyworld\Application\Domain\Model\InternationalAddress;
-use heyworld\Application\Infrastructure\Persistence\Doctrine\Types\StringType;
-use heyworld\Application\Infrastructure\Persistence\Doctrine\Types\UuidType;
-use heyworld\Configuration\Domain\Model\Airline\AirlineId;
-use heyworld\Configuration\Domain\Model\Airline\ChampApiAirlineIdentifier;
-use heyworld\Configuration\Domain\Model\Airline\Name;
-use heyworld\Configuration\Domain\Repository\AirlineRepository;
-
 #[ORM\Entity(repositoryClass: AirlineRepository::class)]
 #[ORM\Table(name: 'configuration.airline')]
 class Airline implements HeyworldImmutableRecord
@@ -107,19 +86,11 @@ class Airline implements HeyworldImmutableRecord
     use HeyworldImmutableRecordLogic;
 
     public const AIRLINE_ID = 'airlineId';
-    public const NAME = 'name';
-    public const ADDRESS = 'address';
     public const CHAMP_API_AIRLINE_IDENTIFIER = 'champApiAirlineIdentifier';
 
     #[ORM\Id]
     #[ORM\Column(type: UuidType::NAME)]
     private AirlineId $airlineId;
-
-    #[ORM\Column(type: StringType::NAME)]
-    private Name $name;
-
-    #[ORM\Embedded(class: InternationalAddress::class)]
-    private InternationalAddress $address;
 
     #[ORM\Column(type: StringType::NAME, nullable: true)]
     private ?ChampApiAirlineIdentifier $champApiAirlineIdentifier = null;
@@ -127,16 +98,6 @@ class Airline implements HeyworldImmutableRecord
     public function airlineId(): AirlineId
     {
         return $this->airlineId;
-    }
-
-    public function name(): Name
-    {
-        return $this->name;
-    }
-
-    public function address(): InternationalAddress
-    {
-        return $this->address;
     }
 
     public function champApiAirlineIdentifier(): ?ChampApiAirlineIdentifier
@@ -149,8 +110,6 @@ class Airline implements HeyworldImmutableRecord
         return JsonSchema::object(
             [
                 self::AIRLINE_ID => AirlineId::jsonSchemaType(),
-                self::NAME => Name::jsonSchemaType(),
-                self::ADDRESS => InternationalAddress::jsonSchemaType(),
             ],
             [
                 self::CHAMP_API_AIRLINE_IDENTIFIER => ChampApiAirlineIdentifier::jsonSchemaType()->asNullable(),

@@ -1,13 +1,13 @@
 # Development rules
-- we use `__invoke` method instead of named one when a class has only one method for better readiness, when we want to use it.
+- ALWAYS use `__invoke` method instead of named one when a class has only one method for better readiness, when we want to use it.
 make sure the class name tells what it’s about.
-- we use it when we need it and prepare ourself self for the following questions from collegues.
+- we CAN use static methods when we need it, but it’s not recommended to use them a lot.
 - exceptions CAN be used minimally if it's the end of execution, otherwise an error object is expected to be used.
-- we use `ProvidesProblemDetails` if we want to show an exception publicly in all environments, otherwise `BadRequest` is just used to provide a status code
-- we throw an exception if the Doctrine Entity is not found and use status code 404 and handle it in the frontend accordingly. We SHOULD NOT return null if the entity does not exist.
-- it’s RECOMMENDED to keep commits count at minimum and keep only meaningful commit messages. Feel free to squash commit your PR while merging to develop. (Not mandatory)
+- ALWAYS use `ProvidesProblemDetails` if we want to show an exception publicly in all environments, otherwise `BadRequest` is just used to provide a status code
+- ALWAYS throw an exception if the Doctrine Entity is not found and use status code 404 and handle it in the frontend accordingly. We SHOULD NOT return null if the entity does not exist.
+- it’s RECOMMENDED to keep commits count at minimum and keep only meaningful commit messages.
 - we CAN use todos in RARE cases, but it’s recommended not to use them a lot
-- for the Doctrine resolvers we use the following rules:
+- for the Doctrine resolvers we ALWAYS follow the rules:
   - byId() method name for the resolver method that resolves entity by PK
   - by%MethodAttributes% for others, e.g.:
       - byAirline()
@@ -16,12 +16,4 @@ make sure the class name tells what it’s about.
     - allByAirlineCode()
 - we have an agreement that we NEED to have unit tests for 3rd party request body mapping, example:
   - `SkynetMapper`
-- when working on the new entity we should provide the relevant seeder for this, so the local environment will be properly supported by seeders. Additionally, if there are entities without seeders, the developer should create them while working on the relevant task.
-- when integrating a new last mile provider we should also add it to seeding and the corresponding countries / locations as well.
-- ORM Entity column names: use snake_case for the column names
-- New DB table names SHOULD NOT be using plurals: we go with the singular form of the aggregate/entity
-- Using PDO prepare → execute in case of having text inputs filled by user:
-  - Always use prepared statement when there are variables in the query
-  - Any query solution can be used: PDO, Dbal Connection, QueryBuilder
-  - Be cautions when building array placeholders with PDO as it can be error prone (empty arrays etc)
-- use @covers annotation to show what this test class covers in case there is no other way to connect it to the unit
+- we CAN use @covers annotation to show what this test class covers in case there is no other way to connect it to the unit

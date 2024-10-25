@@ -65,11 +65,34 @@ async function run() {
     });
 
     const commitId = pullRequest.head.sha;
+    const prDescription = pullRequest.body || "";
+    const branchName = pullRequest.head.ref;
+
+    const { data: commits } = await octokit.rest.pulls.listCommits({
+      ...repo,
+      pull_number: prNumber,
+    });
+    const commitMessages = commits.map((commit) => commit.commit.message);
 
     const { data: files } = await octokit.rest.pulls.listFiles({
       ...repo,
       pull_number: prNumber,
     });
+
+    const fileCount = files.length;
+
+    const prAnalysis = await analyzePRInfo(
+      openai,
+      openAIModel,
+      prDescription,
+      fileCount,
+      branchName,
+      commitMessages,
+    );
+
+    if (prAnalysis) {
+      await createPRComment(octokit, repo, prNumber, prAnalysis);
+    }
 
     const prompts = readProjectPrompts(projectName);
 
@@ -79,23 +102,26 @@ async function run() {
         patch: file.patch || "",
       };
 
-      const openaiAnalysis = await analyzeWithOpenAI(
+      const openaiAnalysis = await analyzePRChanges(
         openai,
         openAIModel,
         fileChange,
         prompts,
       );
 
-      if (openaiAnalysis) {
-        await createReviewComment(
-          octokit,
-          repo,
-          prNumber,
-          commitId,
-          file.filename,
-          openaiAnalysis,
-          file.patch || "",
-        );
+      if (openaiAnalysis.length > 0) {
+        for (const comment of openaiAnalysis) {
+          await createReviewComment(
+            octokit,
+            repo,
+            prNumber,
+            commitId,
+            file.filename,
+            comment.comment,
+            file.patch || "",
+            comment.line,
+          );
+        }
       }
     }
   } catch (error) {
@@ -121,12 +147,12 @@ function readProjectPrompts(projectName: string): string {
   return combinedPrompts.trim();
 }
 
-async function analyzeWithOpenAI(
+async function analyzePRChanges(
   openai: OpenAI,
   openAIModel: string,
   fileChange: FileChange,
   projectPrompts: string,
-): Promise<string> {
+): Promise<Array<{ line: number; comment: string }>> {
   const response = await openai.chat.completions.create({
     model: openAIModel,
     messages: [
@@ -138,12 +164,15 @@ async function analyzeWithOpenAI(
 
         #INSTRUCTIONS#
         You:
+        - MUST provide comments in the following format:
+                  [LINE_NUMBER]: Comment text
+                  [LINE_NUMBER]: Another comment text
         - MUST always follow the guidelines:\n${projectPrompts}
         - MUST NEVER HALLUCINATE
+        - MUST NOT bring changes Overview
         - DENIED to overlook the critical context
         - MUST ALWAYS follow #Answering rules#
         - MUST ALWAYS be short and to the point
-        - MUST put a short conclusion at the end with a score from 1 to 10
 
         #Answering Rules#
         Follow in the strict order:
@@ -162,6 +191,63 @@ async function analyzeWithOpenAI(
     ],
   });
 
+  const content = response.choices[0].message.content || "";
+  const comments = content
+    .split("\n")
+    .map((line) => {
+      const match = line.match(/^\[(\d+)\]:\s(.+)$/);
+      if (match) {
+        return { line: parseInt(match[1]), comment: match[2] };
+      }
+      return null;
+    })
+    .filter(
+      (comment): comment is { line: number; comment: string } =>
+        comment !== null,
+    );
+
+  return comments;
+}
+
+async function analyzePRInfo(
+  openai: OpenAI,
+  openAIModel: string,
+  prDescription: string,
+  fileCount: number,
+  branchName: string,
+  commitMessages: string[],
+): Promise<string> {
+  const response = await openai.chat.completions.create({
+    model: openAIModel,
+    messages: [
+      {
+        role: "system",
+        content: `
+        You are an expert code reviewer. Analyze the given PR description and stats. Your comment HAS to be informative but short as possible.
+        Follow these guidelines:
+        - PR MUST NOT be larger than 30 files.
+        - Optimally they SHOULD include no more than 20 files.
+        - Branch name MUST follow this naming rule: '<type>/<issue-key>-<description>', where type is either 'feature', 'bugfix' or 'other'
+        - Every commit MUST have a prefix with the corresponding issue key (exception when there is no ticket for a commit)
+        - PR that change a small thing like a method or const name, but still affect a lot of files, MUST NOT include any other changes.
+        - PR MUST focus on one thing, so no mixing refactoring with logic changes or refactoring with deletions.
+        - Check if the PR description is adequate and provides necessary information
+        - Provide constructive feedback if improvements are needed, but it should be concise and specific
+        - Be concise and specific in your analysis
+        `,
+      },
+      {
+        role: "user",
+        content: `
+        PR Description:
+        ${prDescription}
+        Number of files changed: ${fileCount}
+        Please analyze the PR description and file count based on the provided guidelines.
+        `,
+      },
+    ],
+  });
+
   return response.choices[0].message.content || "";
 }
 
@@ -173,16 +259,28 @@ async function createReviewComment(
   path: string,
   body: string,
   diff: string,
+  line: number,
 ) {
-  const position = diff.split("\n").length - 1;
-
   await octokit.rest.pulls.createReviewComment({
     ...repo,
     pull_number: prNumber,
     commit_id: commitId,
     body,
     path,
-    position,
+    line,
+  });
+}
+
+async function createPRComment(
+  octokit: Octokit,
+  repo: { owner: string; repo: string },
+  prNumber: number,
+  body: string,
+) {
+  await octokit.rest.issues.createComment({
+    ...repo,
+    issue_number: prNumber,
+    body,
   });
 }
 

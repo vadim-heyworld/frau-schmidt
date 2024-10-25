@@ -1,5 +1,6 @@
-We follow PSR-12 for PHP code style.
-Additionaly we:
+We ALWAYS follow PSR-12 for PHP code style.
+
+We also ALWAYS:
 - Force array element indentation with 4 spaces
 - Forbid `array(...)`
 - Force whitespace after a type cast

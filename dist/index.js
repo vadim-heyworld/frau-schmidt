@@ -35702,16 +35702,27 @@ function run() {
             const repo = context.repo;
             const { data: pullRequest } = yield octokit.rest.pulls.get(Object.assign(Object.assign({}, repo), { pull_number: prNumber }));
             const commitId = pullRequest.head.sha;
+            const prDescription = pullRequest.body || "";
+            const branchName = pullRequest.head.ref;
+            const { data: commits } = yield octokit.rest.pulls.listCommits(Object.assign(Object.assign({}, repo), { pull_number: prNumber }));
+            const commitMessages = commits.map((commit) => commit.commit.message);
             const { data: files } = yield octokit.rest.pulls.listFiles(Object.assign(Object.assign({}, repo), { pull_number: prNumber }));
+            const fileCount = files.length;
+            const prAnalysis = yield analyzePRInfo(openai, openAIModel, prDescription, fileCount, branchName, commitMessages);
+            if (prAnalysis) {
+                yield createPRComment(octokit, repo, prNumber, prAnalysis);
+            }
             const prompts = readProjectPrompts(projectName);
             for (const file of files) {
                 const fileChange = {
                     filename: file.filename,
                     patch: file.patch || "",
                 };
-                const openaiAnalysis = yield analyzeWithOpenAI(openai, openAIModel, fileChange, prompts);
-                if (openaiAnalysis) {
-                    yield createReviewComment(octokit, repo, prNumber, commitId, file.filename, openaiAnalysis, file.patch || "");
+                const openaiAnalysis = yield analyzePRChanges(openai, openAIModel, fileChange, prompts);
+                if (openaiAnalysis.length > 0) {
+                    for (const comment of openaiAnalysis) {
+                        yield createReviewComment(octokit, repo, prNumber, commitId, file.filename, comment.comment, file.patch || "", comment.line);
+                    }
                 }
             }
         }
@@ -35734,7 +35745,7 @@ function readProjectPrompts(projectName) {
     core.debug(`Reading prompts from: ${promptsDir}`);
     return combinedPrompts.trim();
 }
-function analyzeWithOpenAI(openai, openAIModel, fileChange, projectPrompts) {
+function analyzePRChanges(openai, openAIModel, fileChange, projectPrompts) {
     return __awaiter(this, void 0, void 0, function* () {
         const response = yield openai.chat.completions.create({
             model: openAIModel,
@@ -35747,12 +35758,15 @@ function analyzeWithOpenAI(openai, openAIModel, fileChange, projectPrompts) {
 
         #INSTRUCTIONS#
         You:
+        - MUST provide comments in the following format:
+                  [LINE_NUMBER]: Comment text
+                  [LINE_NUMBER]: Another comment text
         - MUST always follow the guidelines:\n${projectPrompts}
         - MUST NEVER HALLUCINATE
+        - MUST NOT bring changes Overview
         - DENIED to overlook the critical context
         - MUST ALWAYS follow #Answering rules#
         - MUST ALWAYS be short and to the point
-        - MUST put a short conclusion at the end with a score from 1 to 10
 
         #Answering Rules#
         Follow in the strict order:
@@ -35770,15 +35784,65 @@ function analyzeWithOpenAI(openai, openAIModel, fileChange, projectPrompts) {
                 },
             ],
         });
+        const content = response.choices[0].message.content || "";
+        const comments = content
+            .split("\n")
+            .map((line) => {
+            const match = line.match(/^\[(\d+)\]:\s(.+)$/);
+            if (match) {
+                return { line: parseInt(match[1]), comment: match[2] };
+            }
+            return null;
+        })
+            .filter((comment) => comment !== null);
+        return comments;
+    });
+}
+function analyzePRInfo(openai, openAIModel, prDescription, fileCount, branchName, commitMessages) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const response = yield openai.chat.completions.create({
+            model: openAIModel,
+            messages: [
+                {
+                    role: "system",
+                    content: `
+        You are an expert code reviewer. Analyze the given PR description and stats. Your comment HAS to be informative but short as possible.
+        Follow these guidelines:
+        - PR MUST NOT be larger than 30 files.
+        - Optimally they SHOULD include no more than 20 files.
+        - Branch name MUST follow this naming rule: '<type>/<issue-key>-<description>', where type is either 'feature', 'bugfix' or 'other'
+        - Every commit MUST have a prefix with the corresponding issue key (exception when there is no ticket for a commit)
+        - PR that change a small thing like a method or const name, but still affect a lot of files, MUST NOT include any other changes.
+        - PR MUST focus on one thing, so no mixing refactoring with logic changes or refactoring with deletions.
+        - Check if the PR description is adequate and provides necessary information
+        - Provide constructive feedback if improvements are needed, but it should be concise and specific
+        - Be concise and specific in your analysis
+        `,
+                },
+                {
+                    role: "user",
+                    content: `
+        PR Description:
+        ${prDescription}
+        Number of files changed: ${fileCount}
+        Please analyze the PR description and file count based on the provided guidelines.
+        `,
+                },
+            ],
+        });
         return response.choices[0].message.content || "";
     });
 }
-function createReviewComment(octokit, repo, prNumber, commitId, path, body, diff) {
+function createReviewComment(octokit, repo, prNumber, commitId, path, body, diff, line) {
     return __awaiter(this, void 0, void 0, function* () {
-        const position = diff.split("\n").length - 1;
         yield octokit.rest.pulls.createReviewComment(Object.assign(Object.assign({}, repo), { pull_number: prNumber, commit_id: commitId, body,
             path,
-            position }));
+            line }));
+    });
+}
+function createPRComment(octokit, repo, prNumber, body) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield octokit.rest.issues.createComment(Object.assign(Object.assign({}, repo), { issue_number: prNumber, body }));
     });
 }
 run();

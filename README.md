@@ -83,7 +83,8 @@ In the repository settings where you're using this action, go to "Secrets and va
 
 ### Project-specific prompts
 
-You can customize the AI's review guidelines for each project. Create a `prompts` directory in your action repository with the following structure:
+You can customize the AI's review guidelines for each project.
+Create a `prompts` directory in your action repository with the following structure:
 
 ```
 prompts/
@@ -95,12 +96,11 @@ prompts/
     └── pr-rules.md
 ```
 
-You can name the files anything you like, but make it descriptive for your project.
+You can name the files anything you like, but make it descriptive for your project and it is a part of the prompt.
 The content of these files will be included in the AI's prompt, allowing you to specify project-specific coding standards, PR guidelines, or any other relevant information.
 
 ### Modifying the AI prompt
-
-To change the base prompt or how project-specific prompts are incorporated, modify the `analyzeWithOpenAI` functions in `src/index.ts`.
+To change the base prompt or how project-specific prompts are incorporated, modify the `analyzePRChanges` and `analyzePRInfo` functions in `src/index.ts`.
 
 ## Contributing
 
