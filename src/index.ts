@@ -12,7 +12,10 @@ interface FileChange {
 
 async function run() {
   try {
+    core.debug("Starting action with debug logging enabled");
+
     const appId = parseInt(core.getInput("app-id", { required: true }));
+    core.debug(`App-id input: ${appId}`);
     if (isNaN(appId)) {
       throw new Error(
         "app-id must be a valid number, but provided the following: " + appId,
@@ -20,10 +23,12 @@ async function run() {
     }
 
     const privateKey = core.getInput("private-key", { required: true });
+    core.debug(`Private key length: ${privateKey.length}`);
 
     const installationId = parseInt(
       core.getInput("installation-id", { required: true }),
     );
+    core.debug(`Installation-id input: ${installationId}`);
     if (isNaN(installationId)) {
       throw new Error(
         "installation-id must be a valid number, but provided the following: " +
@@ -35,6 +40,19 @@ async function run() {
     const projectName = core.getInput("project-name", { required: true });
     const openAIModel = core.getInput("openai-model", { required: true });
 
+    core.debug("Creating Octokit instance with auth config:");
+    core.debug(
+      JSON.stringify(
+        {
+          appId: appId,
+          privateKeyLength: privateKey.length,
+          installationId: installationId,
+        },
+        null,
+        2,
+      ),
+    );
+
     const octokit = github.getOctokit("", {
       authStrategy: createAppAuth,
       auth: {
@@ -43,6 +61,19 @@ async function run() {
         installationId: Number(installationId),
       },
     });
+    core.debug("Successfully created Octokit instance");
+
+    try {
+      const { data: authTest } = await octokit.rest.apps.getAuthenticated();
+      core.debug(`Authentication successful. App name: ${authTest.name}`);
+    } catch (authError) {
+      core.error("Authentication test failed:");
+      core.error(
+        authError instanceof Error ? authError.message : String(authError),
+      );
+      throw authError;
+    }
+
     const openai = new OpenAI({ apiKey: openaiApiKey });
     const context = github.context;
 
