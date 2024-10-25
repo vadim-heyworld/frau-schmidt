@@ -35709,17 +35709,22 @@ function run() {
             const { data: files } = yield octokit.rest.pulls.listFiles(Object.assign(Object.assign({}, repo), { pull_number: prNumber }));
             const fileCount = files.length;
             const prAnalysis = yield analyzePRInfo(openai, openAIModel, prDescription, fileCount, branchName, commitMessages);
+            core.info("PR analysis finished");
             if (prAnalysis) {
+                core.info("Creating PR info comment...");
                 yield createPRComment(octokit, repo, prNumber, prAnalysis);
             }
             const prompts = readProjectPrompts(projectName);
+            core.info(`Read prompts from project directory: ${projectName}`);
             for (const file of files) {
                 const fileChange = {
                     filename: file.filename,
                     patch: file.patch || "",
                 };
+                core.info(`Anylizing PR file change for ${file.filename}...`);
                 const openaiAnalysis = yield analyzePRChanges(openai, openAIModel, fileChange, prompts);
                 if (openaiAnalysis.length > 0) {
+                    core.info(`Anylizing PR file finished with some comments...`);
                     for (const comment of openaiAnalysis) {
                         yield createReviewComment(octokit, repo, prNumber, commitId, file.filename, comment.comment, comment.line);
                     }
@@ -35764,9 +35769,10 @@ function analyzePRChanges(openai, openAIModel, fileChange, projectPrompts) {
         - DENIED to overlook the critical context
         - MUST ALWAYS follow #Answering rules#
         - MUST ALWAYS be short and to the point
-        - MUST provide comments in the following format:
+        - MUST ALWAYS provide comments in the following format:
                   [LINE_NUMBER]: Comment text
                   [LINE_NUMBER]: Another comment text
+        - SHOULD NOT provide unnecessary comments and information
 
         #Answering Rules#
         Follow in the strict order:

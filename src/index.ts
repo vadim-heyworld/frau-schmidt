@@ -90,11 +90,14 @@ async function run() {
       commitMessages,
     );
 
+    core.info("PR analysis finished");
     if (prAnalysis) {
+      core.info("Creating PR info comment...");
       await createPRComment(octokit, repo, prNumber, prAnalysis);
     }
 
     const prompts = readProjectPrompts(projectName);
+    core.info(`Read prompts from project directory: ${projectName}`);
 
     for (const file of files) {
       const fileChange: FileChange = {
@@ -102,6 +105,7 @@ async function run() {
         patch: file.patch || "",
       };
 
+      core.info(`Anylizing PR file change for ${file.filename}...`);
       const openaiAnalysis = await analyzePRChanges(
         openai,
         openAIModel,
@@ -110,6 +114,7 @@ async function run() {
       );
 
       if (openaiAnalysis.length > 0) {
+        core.info(`Anylizing PR file finished with some comments...`);
         for (const comment of openaiAnalysis) {
           await createReviewComment(
             octokit,
@@ -169,9 +174,10 @@ async function analyzePRChanges(
         - DENIED to overlook the critical context
         - MUST ALWAYS follow #Answering rules#
         - MUST ALWAYS be short and to the point
-        - MUST provide comments in the following format:
+        - MUST ALWAYS provide comments in the following format:
                   [LINE_NUMBER]: Comment text
                   [LINE_NUMBER]: Another comment text
+        - SHOULD NOT provide unnecessary comments and information
 
         #Answering Rules#
         Follow in the strict order:
