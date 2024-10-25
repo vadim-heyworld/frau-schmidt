@@ -53,19 +53,23 @@ async function run() {
       ),
     );
 
-    const octokit = github.getOctokit("", {
-      authStrategy: createAppAuth,
-      auth: {
-        appId: appId,
-        privateKey: privateKey,
-        installationId: Number(installationId),
-      },
+    const auth = createAppAuth({
+      appId: appId,
+      privateKey: privateKey,
+      installationId: installationId,
     });
+
+    // Get installation access token
+    core.debug("Getting installation access token...");
+    const installationAuthentication = await auth({ type: "installation" });
+    core.debug("Successfully got installation token");
+
+    const octokit = github.getOctokit(installationAuthentication.token);
     core.debug("Successfully created Octokit instance");
 
     try {
       const { data: authTest } = await octokit.rest.apps.getAuthenticated();
-      core.debug(`Authentication successful. App name: ${authTest.name}`);
+      core.debug(`Authentication successful. App name: ${authTest?.name}`);
     } catch (authError) {
       core.error("Authentication test failed:");
       core.error(
