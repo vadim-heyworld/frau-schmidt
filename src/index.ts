@@ -13,13 +13,11 @@ interface FileChange {
 
 async function run() {
   try {
-    core.debug("Starting action with debug logging enabled");
-
     const appId = parseInt(core.getInput("app-id", { required: true }));
     core.debug(`App-id input: ${appId}`);
     if (isNaN(appId)) {
       throw new Error(
-        "app-id must be a valid number, but provided the following: " + appId,
+        `app-id must be a valid number, but provided the following: ${appId}`,
       );
     }
 
@@ -32,27 +30,13 @@ async function run() {
     core.debug(`Installation-id input: ${installationId}`);
     if (isNaN(installationId)) {
       throw new Error(
-        "installation-id must be a valid number, but provided the following: " +
-          installationId,
+        `installation-id must be a valid number, but provided the following: ${installationId}`,
       );
     }
 
     const openaiApiKey = core.getInput("openai-api-key", { required: true });
     const projectName = core.getInput("project-name", { required: true });
     const openAIModel = core.getInput("openai-model", { required: true });
-
-    core.debug("Creating Octokit instance with auth config:");
-    core.debug(
-      JSON.stringify(
-        {
-          appId: appId,
-          privateKeyLength: privateKey.length,
-          installationId: installationId,
-        },
-        null,
-        2,
-      ),
-    );
 
     const octokit = new Octokit({
       authStrategy: createAppAuth,
@@ -64,17 +48,6 @@ async function run() {
     });
     core.debug("Successfully created Octokit instance");
 
-    try {
-      const { data: authTest } = await octokit.rest.apps.getAuthenticated();
-      core.debug(`Authentication successful. App name: ${authTest?.name}`);
-    } catch (authError) {
-      core.error("Authentication test failed:");
-      core.error(
-        authError instanceof Error ? authError.message : String(authError),
-      );
-      throw authError;
-    }
-
     const openai = new OpenAI({ apiKey: openaiApiKey });
     const context = github.context;
 
@@ -83,7 +56,6 @@ async function run() {
       return;
     }
 
-    // Extract PR number and repo
     const prNumber = context.payload.pull_request.number;
     const repo = context.repo;
 
@@ -92,10 +64,8 @@ async function run() {
       pull_number: prNumber,
     });
 
-    // Get the commit ID which we need in order to make a review comment
     const commitId = pullRequest.head.sha;
 
-    // Fetch PR files
     const { data: files } = await octokit.rest.pulls.listFiles({
       ...repo,
       pull_number: prNumber,
@@ -146,7 +116,6 @@ function readProjectPrompts(projectName: string): string {
     }
   }
 
-  // debug the file names that are being read
   core.debug(`Reading prompts from: ${promptsDir}`);
 
   return combinedPrompts.trim();
@@ -164,16 +133,17 @@ async function analyzeWithOpenAI(
       {
         role: "system",
         content: `
-        You are the most clever and intelligent code reviewer in our team who follows all the provided guidelines.
-        I need your help to review the following code changes.
+        You are the most clever and intelligent developer in our team who ALWAYS follows all the provided guidelines and rules.
+        Review the given chages and follow the following instrustions:
 
         #INSTRUCTIONS#
         You:
-        - MUST always follow the guidelines:\n\n${projectPrompts}
+        - MUST always follow the guidelines:\n${projectPrompts}
         - MUST NEVER HALLUCINATE
         - DENIED to overlook the critical context
         - MUST ALWAYS follow #Answering rules#
         - MUST ALWAYS be short and to the point
+        - MUST put a short conclusion at the end with a score from 1 to 10
 
         #Answering Rules#
         Follow in the strict order:

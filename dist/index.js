@@ -35668,29 +35668,21 @@ const auth_app_1 = __nccwpck_require__(8883);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            core.debug("Starting action with debug logging enabled");
             const appId = parseInt(core.getInput("app-id", { required: true }));
             core.debug(`App-id input: ${appId}`);
             if (isNaN(appId)) {
-                throw new Error("app-id must be a valid number, but provided the following: " + appId);
+                throw new Error(`app-id must be a valid number, but provided the following: ${appId}`);
             }
             const privateKey = core.getInput("private-key", { required: true });
             core.debug(`Private key length: ${privateKey.length}`);
             const installationId = parseInt(core.getInput("installation-id", { required: true }));
             core.debug(`Installation-id input: ${installationId}`);
             if (isNaN(installationId)) {
-                throw new Error("installation-id must be a valid number, but provided the following: " +
-                    installationId);
+                throw new Error(`installation-id must be a valid number, but provided the following: ${installationId}`);
             }
             const openaiApiKey = core.getInput("openai-api-key", { required: true });
             const projectName = core.getInput("project-name", { required: true });
             const openAIModel = core.getInput("openai-model", { required: true });
-            core.debug("Creating Octokit instance with auth config:");
-            core.debug(JSON.stringify({
-                appId: appId,
-                privateKeyLength: privateKey.length,
-                installationId: installationId,
-            }, null, 2));
             const octokit = new rest_1.Octokit({
                 authStrategy: auth_app_1.createAppAuth,
                 auth: {
@@ -35700,28 +35692,16 @@ function run() {
                 },
             });
             core.debug("Successfully created Octokit instance");
-            try {
-                const { data: authTest } = yield octokit.rest.apps.getAuthenticated();
-                core.debug(`Authentication successful. App name: ${authTest === null || authTest === void 0 ? void 0 : authTest.name}`);
-            }
-            catch (authError) {
-                core.error("Authentication test failed:");
-                core.error(authError instanceof Error ? authError.message : String(authError));
-                throw authError;
-            }
             const openai = new openai_1.OpenAI({ apiKey: openaiApiKey });
             const context = github.context;
             if (context.payload.pull_request == null) {
                 core.setFailed("This action can only be run on pull requests");
                 return;
             }
-            // Extract PR number and repo
             const prNumber = context.payload.pull_request.number;
             const repo = context.repo;
             const { data: pullRequest } = yield octokit.rest.pulls.get(Object.assign(Object.assign({}, repo), { pull_number: prNumber }));
-            // Get the commit ID which we need in order to make a review comment
             const commitId = pullRequest.head.sha;
-            // Fetch PR files
             const { data: files } = yield octokit.rest.pulls.listFiles(Object.assign(Object.assign({}, repo), { pull_number: prNumber }));
             const prompts = readProjectPrompts(projectName);
             for (const file of files) {
@@ -35751,7 +35731,6 @@ function readProjectPrompts(projectName) {
             combinedPrompts += `${file}:\n${content}\n\n`;
         }
     }
-    // debug the file names that are being read
     core.debug(`Reading prompts from: ${promptsDir}`);
     return combinedPrompts.trim();
 }
@@ -35763,16 +35742,17 @@ function analyzeWithOpenAI(openai, openAIModel, fileChange, projectPrompts) {
                 {
                     role: "system",
                     content: `
-        You are the most clever and intelligent code reviewer in our team who follows all the provided guidelines.
-        I need your help to review the following code changes.
+        You are the most clever and intelligent developer in our team who ALWAYS follows all the provided guidelines and rules.
+        Review the given chages and follow the following instrustions:
 
         #INSTRUCTIONS#
         You:
-        - MUST always follow the guidelines:\n\n${projectPrompts}
+        - MUST always follow the guidelines:\n${projectPrompts}
         - MUST NEVER HALLUCINATE
         - DENIED to overlook the critical context
         - MUST ALWAYS follow #Answering rules#
         - MUST ALWAYS be short and to the point
+        - MUST put a short conclusion at the end with a score from 1 to 10
 
         #Answering Rules#
         Follow in the strict order:
