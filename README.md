@@ -63,7 +63,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          project-name: ${{ github.event.repository.name }}
+          project-name: ${{ github.event.repository.name }} # Coult be replaced with a static name of the prompts subdir, e.g. 'my-project'
           openai-model: 'gpt-4o-mini'
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -75,14 +75,16 @@ jobs:
 
 In the repository settings where you're using this action, go to "Secrets and variables" > "Actions" and add the following secrets:
 - `OPENAI_API_KEY`: Your OpenAI API key
-
-The `GITHUB_TOKEN` is automatically provided by GitHub Actions.
+- `APP_ID`: Your GitHub App ID
+- `APP_PRIVATE_KEY`: Your GitHub App private key
+- `APP_INSTALLATION_ID`: Your GitHub App installation ID, that can be found in the URL of the GitHub App settings page
 
 ## Customization
 
 ### Project-specific prompts
 
-You can customize the AI's review guidelines for each project. Create a `prompts` directory in your action repository with the following structure:
+You can customize the AI's review guidelines for each project.
+Create a `prompts` directory in your action repository with the following structure:
 
 ```
 prompts/
@@ -94,12 +96,11 @@ prompts/
     └── pr-rules.md
 ```
 
-You can name the files anything you like, but make it descriptive for your project.
+You can name the files anything you like, but make it descriptive for your project and it is a part of the prompt.
 The content of these files will be included in the AI's prompt, allowing you to specify project-specific coding standards, PR guidelines, or any other relevant information.
 
 ### Modifying the AI prompt
-
-To change the base prompt or how project-specific prompts are incorporated, modify the `analyzeWithOpenAI` functions in `src/index.ts`.
+To change the base prompt or how project-specific prompts are incorporated, modify the `analyzePRChanges` and `analyzePRInfo` functions in `src/index.ts`.
 
 ## Contributing
 

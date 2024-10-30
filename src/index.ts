@@ -1,83 +1,62 @@
-import * as core from "@actions/core";
-import * as github from "@actions/github";
-import { OpenAI } from "openai";
-import * as fs from "fs";
-import * as path from "path";
-import { createAppAuth } from "@octokit/auth-app";
+import * as core from '@actions/core';
+import * as github from '@actions/github';
+import { createAppAuth } from '@octokit/auth-app';
+import { Octokit } from '@octokit/rest';
+import { OpenAI } from 'openai';
 
-interface FileChange {
-  filename: string;
-  patch: string;
-}
+import { GitHubService } from './services/gitHub.js';
+import { OpenAIService } from './services/openAI.js';
+import { processFileChange } from './utils/diffParser.js';
+import { readProjectPrompts } from './utils/prompt.js';
 
-async function run() {
+async function run(): Promise<void> {
   try {
-    const appId = core.getInput("app-id", { required: true });
-    const privateKey = core.getInput("private-key", { required: true });
-    const installationId = core.getInput("installation-id", { required: true });
-    const githubToken = core.getInput("github-token", { required: true });
-    const openaiApiKey = core.getInput("openai-api-key", { required: true });
-    const projectName = core.getInput("project-name", { required: true });
-    const openAIModel = core.getInput("openai-model", { required: true });
+    // Initialize services
+    const { octokit, openai, model } = initializeServices();
+    const githubService = new GitHubService(octokit);
+    const openAIService = new OpenAIService(openai, model);
 
-    const octokit = github.getOctokit(githubToken, {
-      authStrategy: createAppAuth,
-      auth: {
-        appId,
-        privateKey,
-        installationId: Number(installationId),
-      },
-    });
-    const openai = new OpenAI({ apiKey: openaiApiKey });
+    // Get PR context
     const context = github.context;
-
-    if (context.payload.pull_request == null) {
-      core.setFailed("This action can only be run on pull requests");
+    if (!context.payload.pull_request) {
+      core.setFailed('This action can only be run on pull requests');
       return;
     }
 
-    // Extract PR number and repo
     const prNumber = context.payload.pull_request.number;
     const repo = context.repo;
 
-    const { data: pullRequest } = await octokit.rest.pulls.get({
-      ...repo,
-      pull_number: prNumber,
-    });
+    // Get PR details
+    const { files, commitId, prDescription, branchName, commitMessages } =
+      await githubService.getPRDetails(repo, prNumber);
 
-    // Get the commit ID which we need in order to make a review comment
-    const commitId = pullRequest.head.sha;
+    // Analyze PR info
+    const prAnalysis = await openAIService.analyzePRInfo(
+      prDescription,
+      files.length,
+      branchName,
+      commitMessages
+    );
 
-    // Fetch PR files
-    const { data: files } = await octokit.rest.pulls.listFiles({
-      ...repo,
-      pull_number: prNumber,
-    });
+    if (prAnalysis) {
+      await githubService.createPRComment(repo, prNumber, prAnalysis);
+    }
 
-    const prompts = readProjectPrompts(projectName);
+    // Process each file
+    const projectPrompts = readProjectPrompts(core.getInput('project-name'));
 
     for (const file of files) {
-      const fileChange: FileChange = {
-        filename: file.filename,
-        patch: file.patch || "",
-      };
+      const fileChange = processFileChange(file);
+      const comments = await openAIService.analyzePRChanges(fileChange, projectPrompts);
 
-      const openaiAnalysis = await analyzeWithOpenAI(
-        openai,
-        openAIModel,
-        fileChange,
-        prompts,
-      );
-
-      if (openaiAnalysis) {
-        await createReviewComment(
-          octokit,
+      for (const comment of comments) {
+        await githubService.createReviewComment(
           repo,
           prNumber,
           commitId,
           file.filename,
-          openaiAnalysis,
-          file.patch || "",
+          comment.comment,
+          comment.line
         );
       }
     }
@@ -86,85 +65,32 @@ async function run() {
   }
 }
 
-function readProjectPrompts(projectName: string): string {
-  const promptsDir = path.join(__dirname, "..", "prompts", projectName);
-  let combinedPrompts = "";
+function initializeServices(): { octokit: Octokit; openai: OpenAI; model: string } {
+  const appId = parseInt(core.getInput('app-id', { required: true }));
+  const privateKey = core.getInput('private-key', { required: true });
+  const installationId = parseInt(core.getInput('installation-id', { required: true }));
+  const openaiApiKey = core.getInput('openai-api-key', { required: true });
+  const model = core.getInput('openai-model', { required: true });
 
-  if (fs.existsSync(promptsDir)) {
-    const files = fs.readdirSync(promptsDir);
-    for (const file of files) {
-      const filePath = path.join(promptsDir, file);
-      const content = fs.readFileSync(filePath, "utf8");
-      combinedPrompts += `${file}:\n${content}\n\n`;
-    }
+  if (isNaN(appId)) {
+    throw new Error(`app-id must be a valid number: ${appId}`);
+  }
+  if (isNaN(installationId)) {
+    throw new Error(`installation-id must be a valid number: ${installationId}`);
   }
 
-  return combinedPrompts.trim();
-}
-
-async function analyzeWithOpenAI(
-  openai: OpenAI,
-  openAIModel: string,
-  fileChange: FileChange,
-  projectPrompts: string,
-): Promise<string> {
-  const response = await openai.chat.completions.create({
-    model: openAIModel,
-    messages: [
-      {
-        role: "system",
-        content: `
-        You are the most clever and intelligent code reviewer in the world.
-        I need your help to review the following code changes.
-        Please provide me with a detailed but short analysis of the changes and suggest improvements.
-
-        #INSTRUCTIONS#
-        You MUST ALWAYS:
-        - Answer in the language of my message
-        - You will be PENALIZED for wrong answers
-        - NEVER HALLUCINATE
-        - You DENIED to overlook the critical context
-        - ALWAYS follow #Answering rules#
-        - Answer MUST be short and concise
-
-        #Answering Rules#
-        Follow in the strict order:
-        1. USE the language of my message
-        2. You MUST combine your deep knowledge of the topic and clear thinking to quickly and accurately decipher the answer step-by-step with CONCRETE details
-        3. I'm going to tip $1,000,000 for the best reply
-        4. Your answer is critical for my career
-        5. Answer the question in a natural, human-like manner
-        6. You MUST ALWAYS follow the following guidelines:\n\n${projectPrompts}`,
-      },
-      {
-        role: "user",
-        content: `File: ${fileChange.filename}\n\nChanges:\n${fileChange.patch}`,
-      },
-    ],
+  const octokit = new Octokit({
+    authStrategy: createAppAuth,
+    auth: {
+      appId,
+      privateKey,
+      installationId,
+    },
   });
 
-  return response.choices[0].message.content || "";
-}
+  const openai = new OpenAI({ apiKey: openaiApiKey });
 
-async function createReviewComment(
-  octokit: ReturnType<typeof github.getOctokit>,
-  repo: { owner: string; repo: string },
-  prNumber: number,
-  commitId: string,
-  path: string,
-  body: string,
-  diff: string,
-) {
-  const position = diff.split("\n").length - 1;
-
-  await octokit.rest.pulls.createReviewComment({
-    ...repo,
-    pull_number: prNumber,
-    commit_id: commitId,
-    body,
-    path,
-    position,
-  });
+  return { octokit, openai, model };
 }
 
 run();
