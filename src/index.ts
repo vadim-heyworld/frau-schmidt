@@ -58,6 +58,9 @@ async function run(): Promise<void> {
           comment.comment,
           comment.line
         );
+        core.info(
+          `Created a comment on ${file.filename} at line ${comment.line} with: ${comment.comment}`
+        );
       }
     }
   } catch (error) {

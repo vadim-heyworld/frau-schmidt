@@ -1,3 +1,4 @@
+import * as core from '@actions/core';
 import { OpenAI } from 'openai';
 
 import { FileChange, ReviewComment } from '../types/index.js';
@@ -17,6 +18,9 @@ export class OpenAIService {
         return `Changes at lines ${hunk.newStart}-${hunk.newStart + hunk.newLines}:\n${hunk.content}`;
       })
       .join('\n\n');
+
+    core.info(`Analyzing file: ${fileChange.filename}`);
+    core.info(`Changes:\n${diffDescription}`);
 
     const response = await this.openai.chat.completions.create({
       model: this.model,

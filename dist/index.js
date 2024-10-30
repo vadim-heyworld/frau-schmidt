@@ -48705,6 +48705,7 @@ class GitHubService {
 }
 
 ;// CONCATENATED MODULE: ./src/services/openAI.ts
+
 class OpenAIService {
     constructor(openAI, model) {
         this.model = model;
@@ -48716,6 +48717,8 @@ class OpenAIService {
             return `Changes at lines ${hunk.newStart}-${hunk.newStart + hunk.newLines}:\n${hunk.content}`;
         })
             .join('\n\n');
+        core.info(`Analyzing file: ${fileChange.filename}`);
+        core.info(`Changes:\n${diffDescription}`);
         const response = await this.openai.chat.completions.create({
             model: this.model,
             messages: [
@@ -48956,6 +48959,7 @@ async function run() {
             const comments = await openAIService.analyzePRChanges(fileChange, projectPrompts);
             for (const comment of comments) {
                 await githubService.createReviewComment(repo, prNumber, commitId, file.filename, comment.comment, comment.line);
+                core.info(`Created a comment on ${file.filename} at line ${comment.line} with: ${comment.comment}`);
             }
         }
     }
