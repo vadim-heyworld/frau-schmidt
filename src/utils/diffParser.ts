@@ -53,15 +53,21 @@ export function parsePatch(patch: string): DiffHunk[] {
 
 export function processFileChange(file: PullRequestFile): FileChange {
   const hunks = parsePatch(file.patch || '');
-  const additions: string[] = [];
-  const deletions: string[] = [];
+  const additions: { content: string; lineNumber: number }[] = [];
+  const deletions: { content: string; lineNumber: number }[] = [];
 
   hunks.forEach(hunk => {
     hunk.changes.forEach(change => {
       if (change.type === 'add') {
-        additions.push(change.content);
+        additions.push({
+          content: change.content,
+          lineNumber: change.lineNumber,
+        });
       } else if (change.type === 'del') {
-        deletions.push(change.content);
+        deletions.push({
+          content: change.content,
+          lineNumber: change.lineNumber,
+        });
       }
     });
   });
