@@ -13,11 +13,10 @@ export class OpenAIService {
   }
 
   async analyzePRChanges(fileChange: FileChange, projectPrompts: string): Promise<ReviewComment[]> {
-    const diffDescription = fileChange.hunks
-      .map(hunk => {
-        return `Changes at lines ${hunk.newStart}-${hunk.newStart + hunk.newLines}:\n${hunk.content}`;
-      })
-      .join('\n\n');
+    const diffDescription = [
+      ...fileChange.deletions.map(del => `-[${del.lineNumber}] ${del.content}`),
+      ...fileChange.additions.map(add => `+[${add.lineNumber}] ${add.content}`),
+    ].join('\n');
 
     core.info(`Analyzing file: ${fileChange.filename}`);
     core.info(`Changes:\n${diffDescription}`);
@@ -82,12 +81,14 @@ export class OpenAIService {
       - DENIED to overlook the critical context
       - MUST ALWAYS follow #Answering rules#
       - MUST ALWAYS be short and to the point
+      - MUST ONLY comment on new or modified lines (lines starting with +)
       - MUST ALWAYS provide comments in the following format:
                 [LINE_NUMBER]: Comment text
                 [LINE_NUMBER]: Another comment text
       - SHOULD NOT provide unnecessary comments and information
       - MUST reference line numbers from the new file for additions/modifications
       - MUST use the actual line numbers from the diff hunks provided
+      - MUST use PHP 8.2 syntax for PHP files
 
       #Answering Rules#
       Follow in the strict order:
@@ -121,10 +122,11 @@ export class OpenAIService {
         const match = line.match(/^\[(\d+)\]:\s(.+)$/);
         if (match) {
           const lineNumber = parseInt(match[1]);
-          const hunk = fileChange.hunks.find(
-            h => lineNumber >= h.newStart && lineNumber <= h.newStart + h.newLines
+          const isValidLine = fileChange.additions.some(
+            addition => addition.lineNumber === lineNumber
           );
-          if (hunk) {
+
+          if (isValidLine) {
             return { line: lineNumber, comment: match[2] };
           }
         }

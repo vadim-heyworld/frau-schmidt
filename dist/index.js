@@ -48712,11 +48712,10 @@ class OpenAIService {
         this.openai = openAI;
     }
     async analyzePRChanges(fileChange, projectPrompts) {
-        const diffDescription = fileChange.hunks
-            .map(hunk => {
-            return `Changes at lines ${hunk.newStart}-${hunk.newStart + hunk.newLines}:\n${hunk.content}`;
-        })
-            .join('\n\n');
+        const diffDescription = [
+            ...fileChange.deletions.map(del => `-[${del.lineNumber}] ${del.content}`),
+            ...fileChange.additions.map(add => `+[${add.lineNumber}] ${add.content}`),
+        ].join('\n');
         core.info(`Analyzing file: ${fileChange.filename}`);
         core.info(`Changes:\n${diffDescription}`);
         const response = await this.openai.chat.completions.create({
@@ -48770,12 +48769,14 @@ class OpenAIService {
       - DENIED to overlook the critical context
       - MUST ALWAYS follow #Answering rules#
       - MUST ALWAYS be short and to the point
+      - MUST ONLY comment on new or modified lines (lines starting with +)
       - MUST ALWAYS provide comments in the following format:
                 [LINE_NUMBER]: Comment text
                 [LINE_NUMBER]: Another comment text
       - SHOULD NOT provide unnecessary comments and information
       - MUST reference line numbers from the new file for additions/modifications
       - MUST use the actual line numbers from the diff hunks provided
+      - MUST use PHP 8.2 syntax for PHP files
 
       #Answering Rules#
       Follow in the strict order:
@@ -48807,8 +48808,8 @@ class OpenAIService {
             const match = line.match(/^\[(\d+)\]:\s(.+)$/);
             if (match) {
                 const lineNumber = parseInt(match[1]);
-                const hunk = fileChange.hunks.find(h => lineNumber >= h.newStart && lineNumber <= h.newStart + h.newLines);
-                if (hunk) {
+                const isValidLine = fileChange.additions.some(addition => addition.lineNumber === lineNumber);
+                if (isValidLine) {
                     return { line: lineNumber, comment: match[2] };
                 }
             }
@@ -48876,10 +48877,16 @@ function processFileChange(file) {
     hunks.forEach(hunk => {
         hunk.changes.forEach(change => {
             if (change.type === 'add') {
-                additions.push(change.content);
+                additions.push({
+                    content: change.content,
+                    lineNumber: change.lineNumber,
+                });
             }
             else if (change.type === 'del') {
-                deletions.push(change.content);
+                deletions.push({
+                    content: change.content,
+                    lineNumber: change.lineNumber,
+                });
             }
         });
     });
@@ -48933,11 +48940,9 @@ function readProjectPrompts(projectName) {
 
 async function run() {
     try {
-        // Initialize services
         const { octokit, openai, model } = initializeServices();
         const githubService = new GitHubService(octokit);
         const openAIService = new OpenAIService(openai, model);
-        // Get PR context
         const context = github.context;
         if (!context.payload.pull_request) {
             core.setFailed('This action can only be run on pull requests');
@@ -48945,14 +48950,11 @@ async function run() {
         }
         const prNumber = context.payload.pull_request.number;
         const repo = context.repo;
-        // Get PR details
         const { files, commitId, prDescription, branchName, commitMessages } = await githubService.getPRDetails(repo, prNumber);
-        // Analyze PR info
         const prAnalysis = await openAIService.analyzePRInfo(prDescription, files.length, branchName, commitMessages);
         if (prAnalysis) {
             await githubService.createPRComment(repo, prNumber, prAnalysis);
         }
-        // Process each file
         const projectPrompts = readProjectPrompts(core.getInput('project-name'));
         for (const file of files) {
             const fileChange = processFileChange(file);

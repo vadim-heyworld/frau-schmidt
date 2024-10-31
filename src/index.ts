@@ -11,12 +11,10 @@ import { readProjectPrompts } from './utils/prompt.js';
 
 async function run(): Promise<void> {
   try {
-    // Initialize services
     const { octokit, openai, model } = initializeServices();
     const githubService = new GitHubService(octokit);
     const openAIService = new OpenAIService(openai, model);
 
-    // Get PR context
     const context = github.context;
     if (!context.payload.pull_request) {
       core.setFailed('This action can only be run on pull requests');
@@ -26,11 +24,9 @@ async function run(): Promise<void> {
     const prNumber = context.payload.pull_request.number;
     const repo = context.repo;
 
-    // Get PR details
     const { files, commitId, prDescription, branchName, commitMessages } =
       await githubService.getPRDetails(repo, prNumber);
 
-    // Analyze PR info
     const prAnalysis = await openAIService.analyzePRInfo(
       prDescription,
       files.length,
@@ -42,7 +38,6 @@ async function run(): Promise<void> {
       await githubService.createPRComment(repo, prNumber, prAnalysis);
     }
 
-    // Process each file
     const projectPrompts = readProjectPrompts(core.getInput('project-name'));
 
     for (const file of files) {

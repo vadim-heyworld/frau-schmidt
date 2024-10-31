@@ -2,8 +2,14 @@ import { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods';
 export interface FileChange {
     filename: string;
     patch: string;
-    additions: string[];
-    deletions: string[];
+    additions: {
+        content: string;
+        lineNumber: number;
+    }[];
+    deletions: {
+        content: string;
+        lineNumber: number;
+    }[];
     hunks: DiffHunk[];
 }
 export interface DiffHunk {
