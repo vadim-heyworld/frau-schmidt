@@ -48684,11 +48684,21 @@ class GitHubService {
             ...repo,
             pull_number: prNumber,
         });
-        const { data: commits } = await this.octokit.rest.pulls.listCommits({
+        const { data: reviews } = await this.octokit.rest.pulls.listReviews({
             ...repo,
             pull_number: prNumber,
         });
+        const botReviews = reviews
+            .sort((a, b) => new Date(b.submitted_at || '').getTime() - new Date(a.submitted_at || '').getTime())
+            .filter(review => review.user?.login === 'frau-schmidt');
+        const lastBotReview = botReviews[0];
+        const lastReviewCommitId = lastBotReview?.commit_id ?? undefined;
         const { data: files } = await this.octokit.rest.pulls.listFiles({
+            ...repo,
+            pull_number: prNumber,
+            ...(lastReviewCommitId && { base: lastReviewCommitId }),
+        });
+        const { data: commits } = await this.octokit.rest.pulls.listCommits({
             ...repo,
             pull_number: prNumber,
         });
