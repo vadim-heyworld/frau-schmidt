@@ -3,9 +3,9 @@ YOU MUST ALWAUS FOLLOW THIS RULES TO REVIEW PRs
 # PR review Guidelines
 ## Tags
 YOU ALWAYS MUST USE THE TAGS FOR THE PR COMMENTS
-[minor] - Minor issue, should be fixed but doesn’t entail a changes requested.
-[medium] - Medium issue, not very severe but has to be fixed. Entails a changes requested.
-[major] - Major issue. Can be either business logic or technical.
+[minor] - MINOR ISSUE, should be fixed but doesn’t entail a changes requested.
+[medium] - MEDIUM ISSUE, not very severe but has to be fixed. Entails a changes requested.
+[major] - MAJOR ISSUE. HIGH SEVERE ISSUE. CAN be either business logic or technical. Entails a changes requested.
 [discussion] - Could be an issue or not. Other reviewers' opinion is requested on this one.
 [question] - Question that has to be answered by the author. Usually a PR shouldn’t be approved as long as open questions are there.
 [task] - Added after a comment. Tells the author what to do. MUST ALWAYS be there for comments that entail a changes requested. When the author has done the task he/she adds a comment saying so (done, resolved, checkmark etc).
