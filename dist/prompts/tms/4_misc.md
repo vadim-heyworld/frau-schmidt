@@ -1,0 +1,18 @@
+# Development rules
+- We MUST ALWAYS use `__invoke` method instead of named one when a class has only one method for better readiness, when we want to use it, BUT make sure the class name tells what it’s about.
+- We CAN use static methods when we need it, but it’s not recommended to use them a lot.
+- Exceptions CAN be used minimally if it's the end of execution, otherwise an error object MUST be used.
+- We ALWAYS use `ProvidesProblemDetails` if we want to show an exception publicly in all environments, otherwise `BadRequest` is just used to provide a status code
+- We MUST throw an exception if the Doctrine Entity is not found and use status code 404 and handle it in the frontend accordingly. We MUST NOT return null if the entity does not exist.
+- We MUST to keep commits count at minimum and keep only meaningful commit messages.
+- We HAVE to use todos ONLY in RARE cases
+- For the Doctrine resolvers we MUST follow the rules:
+  -- byId() method name for the resolver method that resolves entity by PK
+  -- by%MethodAttributes% for others, e.g.:
+      --- byAirline()
+      --- byAirlineAndCustomer()
+  -- add prefix *all* for lists, e.g.
+      --- allByAirlineCode()
+- We MUST have unit tests for 3rd party request body mapping, example:
+  -- `heyworld\LabelGenerationAndTracking\Infrastructure\LastMileProvider\Skynet\SkynetMapper.php`
+- We SHOULD use @covers annotation to show what this test class covers ONLY in case there is no other way to connect it to the unit

@@ -48759,7 +48759,7 @@ class OpenAIService {
           Number of files changed: ${fileCount}
           Branch name: ${branchName}
           Commit messages: ${commitMessages.join(', ')}
-          Please analyze the PR description and file count based on the provided guidelines.
+          You MUST analyze the PR description and file count based on the provided guidelines.
           `,
                 },
             ],
@@ -48773,9 +48773,8 @@ class OpenAIService {
 
       #INSTRUCTIONS#
       You:
-      - MUST always follow the guidelines:\n${projectPrompts}
+      - MUST ALWAYS follow the guidelines:\n${projectPrompts}
       - MUST NEVER HALLUCINATE
-      - MUST NOT bring changes overview, ONLY analyze the changes
       - DENIED to overlook the critical context
       - MUST ALWAYS follow #Answering rules#
       - MUST ALWAYS be short and to the point
@@ -48789,12 +48788,12 @@ class OpenAIService {
       - MUST use PHP 8.2 syntax for PHP files
 
       #Answering Rules#
-      Follow in the strict order:
-      1. USE the language of my message
-      2. You MUST combine your deep knowledge of the topic and clear thinking
-      3. Answer the question in a natural, human-like manner
-      4. DONT provide unnecessary information
-      5. DONT tell me about the changes that were made by author, only analyze the changes`;
+      Follow in the strict order, you:
+      1. MUST USE the language of my message
+      2. MUST NOT tell me about the changes that were made by author, only analyze the changes
+      3. MUST combine your deep knowledge of the topic and clear thinking
+      4. MUST answer the question in a natural, human-like manner
+      5. MUST NOT provide unnecessary information`;
     }
     buildPRInfoPrompt() {
         return `
@@ -48807,8 +48806,8 @@ class OpenAIService {
       - PR that change a small thing MUST NOT include any other changes.
       - PR MUST focus on one thing
       - Check if the PR description is adequate
-      - Provide constructive feedback
-      - Be concise and specific in your analysis
+      - You MUST Provide constructive feedback
+      - You MUST be concise and specific in your analysis
     `;
     }
     parseResponse(content, fileChange) {

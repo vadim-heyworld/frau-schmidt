@@ -11,22 +11,14 @@ This GitHub Action performs an AI-powered code review on pull requests using Ope
 
 ## Setup
 
-### 1. Create a new repository for the action
-
-Create a new GitHub repository to host this action. Clone the repository and add the following files:
-
-- `src/index.ts`: The main TypeScript file containing the action logic
-- `action.yml`: The action metadata file
-- `package.json`: Node.js package configuration
-- `tsconfig.json`: TypeScript configuration
+### 1. Clone the repository
 
 ### 2. Install dependencies
 
 Run the following command to install the necessary dependencies:
 
 ```bash
-npm install @actions/core @actions/github openai
-npm install --save-dev @types/node @vercel/ncc typescript
+npm install
 ```
 
 ### 3. Build the action
@@ -63,7 +55,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          project-name: ${{ github.event.repository.name }} # Coult be replaced with a static name of the prompts subdir, e.g. 'my-project'
+          project-name: ${{ github.event.repository.name }} # CAN be replaced with a static name of the prompts subdir, e.g. 'my-project'
           openai-model: 'gpt-4o-mini'
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -74,10 +66,10 @@ jobs:
 ### Setting up secrets
 
 In the repository settings where you're using this action, go to "Secrets and variables" > "Actions" and add the following secrets:
-- `OPENAI_API_KEY`: Your OpenAI API key
-- `APP_ID`: Your GitHub App ID
-- `APP_PRIVATE_KEY`: Your GitHub App private key
-- `APP_INSTALLATION_ID`: Your GitHub App installation ID, that can be found in the URL of the GitHub App settings page
+- `OPENAI_API_KEY`: The OpenAI API key
+- `APP_ID`: The GitHub App ID
+- `APP_PRIVATE_KEY`: The GitHub App private key
+- `APP_INSTALLATION_ID`: The GitHub App installation ID, that can be found in the URL of the GitHub App settings page
 
 ## Customization
 
@@ -89,11 +81,11 @@ Create a `prompts` directory in your action repository with the following struct
 ```
 prompts/
 ├── project1/
-│   ├── code-style.md
-│   └── pr-rules.md
+│   ├── 1_code-style.md
+│   └── 2_pr-rules.md
 └── project2/
-    ├── code-style.md
-    └── pr-rules.md
+    ├── 1_code-style.md
+    └── 2_pr-rules.md
 ```
 
 You can name the files anything you like, but make it descriptive for your project and it is a part of the prompt.
