@@ -1,4 +1,4 @@
-Please, these code examples are the classes we can take as a reference.
+You MUST use these code examples as the classes we take as a reference of how we build test builder, test cases and entities
 
 ## Test Builder:
 ````php
