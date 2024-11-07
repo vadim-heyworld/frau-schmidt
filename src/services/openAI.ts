@@ -87,7 +87,6 @@ export class OpenAIService {
       - SHOULD NOT provide unnecessary comments and information
       - MUST reference line numbers from the new file for additions/modifications
       - MUST use the actual line numbers from the diff hunks provided
-      - MUST use PHP 8.2 syntax for PHP files
 
       #Answering Rules#
       Follow in the strict order, you:
