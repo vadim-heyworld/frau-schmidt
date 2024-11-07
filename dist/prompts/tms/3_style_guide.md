@@ -124,7 +124,6 @@ $array = [
 - Use Hungarian notation
 - Single letter variables
 - Abbreviations
-```
 
 ## 4. Examples
 ### Good Code Example:
