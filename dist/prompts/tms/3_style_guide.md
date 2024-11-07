@@ -1,60 +1,172 @@
-We MUST follow PSR-12 for PHP code styling.
+# PHP Style Guide
+We MUST follow PSR-12 for PHP code styling and MUST use PHP 8.2 syntax
 
-We also MUST:
-- Force array element indentation with 4 spaces
-- Forbid `array(...)`
-- Force whitespace after a type cast
-- Forbid any content before opening tag
-- Forbid deprecated functions
-- Force parameter and return type declarations to be lowercased
-- Require comma after last element in multi-line array
-- Require presence of constant visibility
-- Forbid empty lines around class braces
-- Forbid prefix and suffix "Exception" for exception classes
-- Forbid prefix and suffix "Interface" for interfaces
-- Forbid suffix "Trait" for traits
-- Require usage of null coalesce operator when possible
-- Forbid usage of conditions when a simple return can be used
-- Forbid useless unreachable catch blocks
-- Require using Throwable instead of Exception
-- Require use statements to be alphabetically sorted
-- Forbid fancy group uses
-- Forbid multiple use statements on same line
-- Forbid using absolute class name references (except global ones)
-- Forbid unused use statements
-- Forbid superfluous leading backslash in use statements
-- Forbid useless uses of the same namespace
-- Forbid useless alias for classes, constants and functions
-- Forbid weak comparisons
-- Require no spacing after spread operator
-- Forbid argument unpacking for functions specialized by PHP VM
-- Forbid `list(...)` syntax
-- Forbid use of longhand cast operators
-- Require presence of declare(strict_types=1)
-- Forbid useless parentheses
-- Forbid useless semicolon `;`
-- Require use of short versions of scalar types (i.e. int instead of integer)
-- Require the `null` type hint to be in the last position of annotations
-- Require ? when default value is null
-- Require one space between typehint and variable, require no space between nullability sign and typehint
-- Forbid space before colon in return types
-- Forbid spaces around square brackets
-- Force `self::` for self-reference, force lower-case self, forbid spaces around `::`
-- Forbid global functions
-- Force camelCase variables
-- Forbid `AND` and `OR`, require `&&` and `||`
-- Forbid `global`
-- Forbid functions inside functions
-- Require PHP function calls in lowercase
-- Forbid dead code
-- Forbid `$this` inside static function
-- Force whitespace before and after concatenation
-- Forbid spaces in type casts
-- Forbid blank line after function opening brace
-- Require 1 line before and after function, except at the top and bottom
-- Require there be no space between increment/decrement operator and its operand
-- Require space after language constructs
-- Require space around logical operators
-- Forbid spaces around `->` operator
-- Forbid spaces before semicolon `;`
-- Forbid superfluous whitespaces
+## 1. Code Structure
+### File Organization
+✅ REQUIRED:
+- declare(strict_types=1) must be first
+- No content before opening PHP tag
+- Use statements must be:
+  - Alphabetically sorted
+  - One use statement per line
+  - No group uses
+  - No leading backslash
+  - No unused statements
+  - No useless namespace uses
+
+### Class Organization
+✅ DO:
+- Order: constants, properties, constructor, methods
+- Use visibility modifiers for constants
+- No empty lines around class braces
+- No functions inside functions
+- Proper type declarations
+
+❌ DON'T:
+- Use suffix "Exception", "Interface", or "Trait"
+- Use global functions or `global` keyword
+- Use `$this` inside static functions
+- Mix concerns in single class
+
+### Method Organization
+✅ Required Format:
+```php
+public function methodName(
+    Type $param1,
+    ?Type $param2 = null
+): ReturnType {
+    // One line space before and after function
+    // No blank line after opening brace
+}
+```
+
+## 2. Syntax Requirements
+
+### Types and Declarations
+✅ DO:
+- Use short scalar types (int vs integer)
+- Use lowercase for parameter and return types
+- Place null type hint last in annotations
+- Use ? for nullable types when default is null
+- Use Throwable instead of Exception
+
+### Spacing Rules
+✅ REQUIRED:
+- 4 spaces for array indentation
+- One space between typehint and variable
+- No space between nullability sign (?) and typehint
+- No space before colon in return types
+- No spaces around square brackets
+- No spaces around `->` operator
+- No spaces around `::`
+- No spaces in type casts
+- Space after language constructs
+- Space around logical operators
+- Space before/after concatenation
+- No space between increment/decrement operator and operand
+- No spaces before semicolon
+- No superfluous whitespaces
+
+### Array Syntax
+✅ DO:
+```php
+$array = [
+    'key' => 'value',
+    'another' => 'value',    // Comma required in multi-line
+];
+```
+
+❌ DON'T:
+- Use `array()`
+- Use `list(...)` syntax
+- Skip trailing comma in multi-line arrays
+
+### Operators and Comparisons
+✅ DO:
+- Use `&&` and `||`
+- Use null coalesce operator when possible
+- Use strict comparisons (=== and !==)
+
+❌ DON'T:
+- Use `AND` and `OR`
+- Use weak comparisons (== and !=)
+- Use argument unpacking for PHP VM specialized functions
+- Have value assignment in IF statements
+
+### Clean Code
+✅ REQUIRED:
+- No dead code
+- No useless parentheses
+- No useless semicolons
+- No useless catch blocks
+- No deprecated functions
+- Simple returns instead of conditions when possible
+
+## 3. Naming Conventions
+### Classes
+✅ DO:
+- PascalCase for class names
+- Descriptive, action-based names
+- Single responsibility principle
+
+❌ DON'T:
+- Use suffixes (Exception, Interface)
+- Create generic names
+- Mix naming conventions
+
+### Variables and Methods
+✅ DO:
+- camelCase for methods/variables
+- Boolean prefix: is/has/should
+- Clear, descriptive names
+
+❌ DON'T:
+- Use Hungarian notation
+- Single letter variables
+- Abbreviations
+```
+
+## 4. Examples
+### Good Code Example:
+```php
+declare(strict_types=1);
+
+namespace App\Domain;
+
+final class Customer
+{
+    public const STATUS_ACTIVE = 'active';
+    private CustomerId $id;
+    private ?string $name = null;
+
+    public function setName(?string $name): self
+    {
+        $this->name = $name ?? '';
+        return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === self::STATUS_ACTIVE;
+    }
+}
+```
+
+### Bad Code Example:
+```php
+namespace App\Domain;
+
+class CustomerInterface    // ❌ Don't use Interface suffix
+{
+    function GetName()     // ❌ Missing visibility, wrong case
+    {
+        global $status;    // ❌ Don't use global
+
+        if ($name = $this->loadName()) {  // ❌ Assignment in condition
+            return $name;
+        } else {
+            return NULL;   // ❌ Wrong case for null
+        }
+    }
+}
+```

@@ -1,28 +1,151 @@
 # Backend
-## General
+
+## 1. Architecture Patterns
+### Domain Organization
+- One domain concept per file
+- Clear boundary between domains
+- Use resolvers for cross-domain communication
+✅ Module Dependencies:
+```php
+// ✅ DO: Import from dependent module
+use OtherModule\Domain\Customer;
+
+// ❌ DON'T: Duplicate models across modules
+class Customer { /* duplicated code */ }
+```
+
+
+### Data Access
+✅ REQUIRED:
+- Use resolvers over direct entity manager access
+- Use typed parameters and return values
+- Follow naming conventions
+
+✅ DO:
+```php
+public function byId(CustomerId $id): Customer
+{
+    return $this->resolver->customer($id);
+}
+
+public function byStatus(Status $status): array
+{
+    return $this->resolver->allByStatus($status);
+}
+```
+❌ DON'T:
+```php
+public function getCustomerById(string $id): Customer
+{
+    return $this->entityManager->find(Customer::class, $id);
+}
+
+public function findByStatus($status)
+{
+    return $this->repository->findBy(['status' => $status]);
+}
+```
+
+### Error Handling
+- Use Result objects for expected errors
+- Throw exceptions for system errors
+- Always include context in errors
+✅ REQUIRED:
+```php
+// Business logic errors
+public function process(): Result
+{
+    if (!$this->isValid()) {
+        return Result::failure('Invalid data', context: ['id' => $this->id]);
+    }
+    return Result::success($data);
+}
+
+// System errors
+public function retrieve(): void
+{
+    if (!$this->connection->isActive()) {
+        throw new ConnectionException('Database connection failed');
+    }
+}
+
+
+## 2. Code Organization
 ### Constants
-We MUST use consts instead of strings to identify properties, i.e. `$state[Parcel::PARCEL_ID]` and in any other case where it makes sense.
-*Note*: mappings for 3rd party APIs usually use plain string array keys
-Commonly used consts like `SHIPPING_ORDER_ID` MUST be in `GlobalPayload` (**Application domain**)
+We MUST use consts instead of strings to identify properties
+✅ DO:
+```php
+class ShippingOrder
+{
+    public const SHIPPING_ORDER_ID = 'shippingOrderId';
+    public const STATUS = 'status';
 
-### Annotations
-We MUST use return type annotations only when the return cannot be expressed with return type argument,
-i.e. the return is an array, then the contents of the array can be specified with an annotation
-`@psalm-suppress` as one-line comment, `@test as multi-line comment
-Psalm suppressions SHOULD BE avoided, but if unavoidable, preferrably they are in the file itself rather than the **psalm.xml**
-(only put them there if they affect a whole bunch of files)
+    private ShippingOrderId $id;
+    private Status $status;
+}
+```
+❌ DON'T:
+- Use magic strings
+- Duplicate constants across domains
 
-### php internal functions
-We MUST NOT import ‘use function’
-We MUST use template strings when possible or concat with `'.'`. **sprintf should not be used**
-We MUST NOT use php internal array methods in favour of `ArrayList` helper class: `\heyworld\Collections\ArrayList`
+### Database Practices
+✅ DO:
+- Use prepared statements
+- Implement batch processing
+- Use correct data types
 
-### Different modules
-If the current module depends on the module that models are needed from, we import them rather than duplicating them
-We MUST use resolvers when possible (existing dependency between modules), and `messageDispatcher` when the modules have no dependency to each other (avoid creating unnecessary dependencies)
+❌ DON'T:
+- Query in loops
+```php
+// Avoid queries in loops
+foreach ($orders as $order) {
+    $this->entityManager->persist($order);  // ❌ BAD
+    $this->entityManager->flush();          // ❌ BAD
+}
+```
+- Use string for UUID/timestamps
+- Mix database concerns with business logic
+
+### Annotations and Types
+✅ REQUIRED:
+```php
+class OrderService {
+    /**
+     * @return Order[] Array of pending orders
+     */
+    public function getPendingOrders(): array {
+        // Implementation
+    }
+
+    /** @psalm-suppress InvalidArgument */
+    public function process(): void {
+        // Only when absolutely necessary
+    }
+}
+```
+
+### PHP Best Practices
+✅ DO:
+```php
+// String concatenation
+$message = "Order {$orderId} processed";
+$path = $basePath . '/' . $filename;
+
+// Array operations
+$items = ArrayList::from($array)
+    ->filter(fn($item) => $item->isActive())
+    ->map(fn($item) => $item->toArray());
+```
+
+❌ DON'T:
+```php
+use function array_map;  // ❌ Don't import PHP functions
+$message = sprintf("Order %s processed", $orderId);  // ❌ Don't use sprintf
+```
 
 ### Misc
 Each basic class MUST define its own `jsonSchemaType` and that should be used in complex models, we avoid using `Schema.php`, ie.:
+✅ DO:
 ```php
 public static function jsonSchemaType(): BoolType
 {
@@ -30,41 +153,93 @@ public static function jsonSchemaType(): BoolType
 }
 ```
 
-When making changes to states/events (especially in the `ShippingOrder` and `ParcelTracking` domains) we MUST make sure that the projections still work
-The seeding MUST be updated to include it, when integrating a new Last Mile Provider.
+### Tests Standards
+✅ REQUIRED:
+```php
+final class OrderProcessTest extends TestCase
+{
+    /**
+     * @test
+     * @dataProvider orderStatusProvider
+     */
+    public function it_processes_order_with_different_statuses(
+        OrderStatus $status,
+        bool $expectedResult
+    ): void {
+        // given
+        $order = OrderBuilder::create()
+            ->withStatus($status)
+            ->build();
 
-## Database
-- We MUST NOT use database queries in for loops (performance)
-- We MUST use generators when loading large data sets from the database
-- We MUST use the correct database types (timestamp, uuid) instead of varchar
-- We MUST use prepared statements to avoid SQL injection
-- Table names MUST use singular (e.g. configuration.customer)
-- We MUST use *snake_case* for column names
-- We MUST use **resolver** over **entityManager** (the exception are the command handlers because we need the entityManager there to do the persisting) when loading entities
+        // when
+        $result = $this->processor->process($order);
 
-## Naming
-- We MUST NOT use **Interface** or I prefix/suffix for interfaces
-- We MUST NOT use **Exception** suffix for exceptions
-- In listeners the function name MUST state what it is doing not when (i.e. retrieveLabel rather than onShipmentCreated)
-- External queries/events that are needed in a module MUST be listed in a class **ExternalQuery/ExternalEvent** to make it obvious that it is external
-- We MUST NOT use the ‘get’ prefix for getters
-- We MUST MOT use the ‘resolve’ prefix for resolvers
-- Preprocessors MUST use method **preProcess** rather than **__invoke**
+        // then
+        self::assertSame($expectedResult, $result);
+    }
 
-## Tests
-- Tests name MUST be in snake case starting with *it_* and do not include test in the name
-- We MUST seed every app test individually
-- We SHOULD structure tests by **given/when/then** structure (then can be before when in case of expectException)
-- Test methods MUST ALWAYS have a return type (usually void)
-- Handlers MUST have at least one app test to cover the routing
-- Data Provider cases MUST have names and they should be in plain text (no snake_case) with the essential information for the case
-- Builders MUST have a static **create** method and we use that to instantiate them
-- 3rd party tests MUST have the **@thirdParty** group annotation
-- If a feature is added/modified there MUST be a test that covers it
+    public function orderStatusProvider(): array
+    {
+        return [
+            'new order can be processed' => [
+                OrderStatus::new(),
+                true,
+            ],
+            'completed order cannot be processed' => [
+                OrderStatus::completed(),
+                false,
+            ],
+        ];
+    }
+}
+```
 
-# Frontend
-- We MUST separate styles from DOM (i.e. have a separate file for styles)
-- We MUST NOT use index.tsx to name componentes
-- We MUST use Prettier tool for formatting
-- Custom types that just wrap a primitive type (e.g. string) MUST NOT be used, BUT they are fine for complex types like enums
-- API calls MUST NOT check the status code of the result
+### Test Requirements
+✅ REQUIRED:
+- Snake case test names starting with `it_`
+- Given/When/Then structure
+- Individual test seeding
+- Return type declarations
+- Cover new features with tests
+- Use data providers for multiple scenarios
+
+
+## 4. Frontend Standards
+
+### Structure
+✅ DO:
+```typescript
+// Component.tsx
+export const OrderList: React.FC = () => {
+    return <div className={styles.container}>...</div>;
+};
+
+// Component.styles.ts
+export const styles = {
+    container: 'p-4 bg-white rounded',
+};
+```
+
+### Types and API
+✅ DO:
+```typescript
+// Complex types are okay
+type OrderStatus = 'pending' | 'completed' | 'cancelled';
+
+// API calls
+const fetchOrder = async (id: string) => {
+    const response = await api.get(`/orders/${id}`);
+    return response.data;
+};
+```
+
+❌ DON'T:
+```typescript
+// Don't wrap primitive types
+type OrderId = string;  // ❌ BAD
+
+// Don't check status in component
+if (response.status === 200) {  // ❌ BAD
+    // handle response
+}
+```
