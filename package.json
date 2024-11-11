@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
+    "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt -m --target es2020 --no-source-map-register",
     "lint": "eslint . \"**/*.ts\"",
     "lint:fix": "eslint . \"**/*.ts\" --fix",
     "format": "prettier --write \"src/**/*.ts\"",
