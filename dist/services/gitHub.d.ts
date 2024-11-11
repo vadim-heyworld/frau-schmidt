@@ -3,6 +3,10 @@ import { PRDetails } from '../types/index.js';
 export declare class GitHubService {
     private readonly octokit;
     constructor(octokit: Octokit);
+    getFileContent(repo: {
+        owner: string;
+        repo: string;
+    }, path: string, ref: string): Promise<string | null>;
     createReviewComment(repo: {
         owner: string;
         repo: string;

@@ -14,6 +14,7 @@ async function run(): Promise<void> {
     const { octokit, openai, model } = initializeServices();
     const githubService = new GitHubService(octokit);
     const openAIService = new OpenAIService(openai, model);
+    const fullScan = core.getBooleanInput('full-scan') || false;
 
     const context = github.context;
     if (!context.payload.pull_request) {
@@ -42,6 +43,13 @@ async function run(): Promise<void> {
 
     for (const file of files) {
       const fileChange = processFileChange(file);
+      if (fullScan) {
+        const fileContent = await githubService.getFileContent(repo, file.filename, commitId);
+        if (fileContent) {
+          fileChange.fullContent = fileContent;
+        }
+      }
+
       const comments = await openAIService.analyzePRChanges(fileChange, projectPrompts);
 
       for (const comment of comments) {

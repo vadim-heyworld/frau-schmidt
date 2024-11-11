@@ -11,6 +11,7 @@ export interface FileChange {
         lineNumber: number;
     }[];
     hunks: DiffHunk[];
+    fullContent?: string;
 }
 export interface DiffHunk {
     content: string;

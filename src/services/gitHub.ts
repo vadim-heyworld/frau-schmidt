@@ -1,3 +1,5 @@
+import { Buffer } from 'buffer';
+
 import * as core from '@actions/core';
 import { Octokit } from '@octokit/rest';
 
@@ -8,6 +10,28 @@ export class GitHubService {
 
   constructor(octokit: Octokit) {
     this.octokit = octokit;
+  }
+
+  async getFileContent(
+    repo: { owner: string; repo: string },
+    path: string,
+    ref: string
+  ): Promise<string | null> {
+    try {
+      const response = await this.octokit.rest.repos.getContent({
+        ...repo,
+        path,
+        ref,
+      });
+
+      if ('content' in response.data) {
+        return Buffer.from(response.data.content, 'base64').toString();
+      }
+      return null;
+    } catch (error) {
+      core.warning(`Failed to fetch file content for ${path}: ${error}`);
+      return null;
+    }
   }
 
   async createReviewComment(
