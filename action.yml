@@ -1,24 +1,28 @@
-name: "AI PR Review"
-description: "Reviews PRs using AI APIs"
+name: 'AI PR Review'
+description: 'Reviews PRs using AI APIs'
 inputs:
   app-id:
-    description: "GitHub App ID"
+    description: 'GitHub App ID'
     required: true
   private-key:
-    description: "GitHub App private key"
+    description: 'GitHub App private key'
     required: true
   installation-id:
-    description: "GitHub App installation ID"
+    description: 'GitHub App installation ID'
     required: true
   openai-api-key:
-    description: "OpenAI API key"
+    description: 'OpenAI API key'
     required: true
   project-name:
-    description: "Name of the project (for project-specific prompts)"
+    description: 'Name of the project (for project-specific prompts)'
     required: true
   openai-model:
-    description: "OpenAI model to use"
+    description: 'OpenAI model to use'
     required: true
+  full-scan:
+    description: 'Whether to scan the entire PR or just the diff'
+    required: false
+    default: 'false'
 runs:
-  using: "node20"
-  main: "dist/index.js"
+  using: 'node20'
+  main: 'dist/index.js'
