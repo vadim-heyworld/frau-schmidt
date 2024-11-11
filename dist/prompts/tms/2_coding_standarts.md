@@ -19,14 +19,31 @@ class Customer { /* duplicated code */ }
 ✅ REQUIRED:
 - Use resolvers over direct entity manager access
 - Use typed parameters and return values
-- Follow naming conventions
+- Follow naming conventions:
+
+#### Naming Conventions:
+- Don't use Interface or I prefix/suffix for interfaces
+- Don't use Exception suffix for exceptions
+- In listeners, name functions by action, not event (e.g., `retrieveLabel` not `onShipmentCreated`)
+- Don't use 'get' prefix for getters
+- Don't use 'resolve' prefix for resolvers
 
 ✅ DO:
 ```php
-public function byId(CustomerId $id): Customer
-{
-    return $this->resolver->customer($id);
-}
+// Interface
+interface OrderProcessor { }  // Not OrderProcessorInterface
+
+// Exception
+class InvalidOrder extends RuntimeException { }  // Not InvalidOrderException
+
+// Listener
+public function retrieveLabel(ShipmentEvent $event) { }  // Not onShipmentCreated
+
+// Getter
+public function total(): float { }  // Not getTotal
+
+// Resolver
+public function customer(CustomerId $id): Customer { }  // Not resolveCustomer
 
 public function byStatus(Status $status): array
 {
@@ -35,15 +52,16 @@ public function byStatus(Status $status): array
 ```
 ❌ DON'T:
 ```php
-public function getCustomerById(string $id): Customer
-{
-    return $this->entityManager->find(Customer::class, $id);
-}
+interface IOrderProcessor { }  // ❌ BAD
+interface OrderProcessorInterface { }  // ❌ BAD
 
-public function findByStatus($status)
-{
-    return $this->repository->findBy(['status' => $status]);
-}
+class InvalidOrderException extends RuntimeException { }  // ❌ BAD
+
+public function onShipmentCreated(ShipmentEvent $event) { }  // ❌ BAD
+
+public function getTotal(): float { }  // ❌ BAD
+
+public function resolveCustomer(CustomerId $id): Customer { }  // ❌ BAD
 ```
 
 ### Error Handling
@@ -113,7 +131,7 @@ class OrderService {
     /**
      * @return Order[] Array of pending orders
      */
-    public function getPendingOrders(): array {
+    public function pendingOrders(): array {
         // Implementation
     }
 
