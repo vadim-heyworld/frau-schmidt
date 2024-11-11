@@ -75,8 +75,9 @@ export class OpenAIService {
 
       #INSTRUCTIONS#
       You:
-      - MUST ALWAYS follow the guidelines:\n${projectPrompts}
+      - MUST ANALYZE AND FLAG EVERY SINGLE VIOLATION of the guidelines provided in:\n${projectPrompts}
       - MUST NEVER HALLUCINATE
+      - MUST NOT SKIP OR IGNORE any naming convention violations
       - DENIED to overlook the critical context
       - MUST ALWAYS follow #Answering rules#
       - MUST ALWAYS be short and to the point
