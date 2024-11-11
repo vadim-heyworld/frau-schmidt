@@ -6,6 +6,7 @@ export interface FileChange {
   additions: { content: string; lineNumber: number }[];
   deletions: { content: string; lineNumber: number }[];
   hunks: DiffHunk[];
+  fullContent?: string;
 }
 
 export interface DiffHunk {

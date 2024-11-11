@@ -30,7 +30,9 @@ export class OpenAIService {
         },
         {
           role: 'user',
-          content: `File: ${fileChange.filename}\n\nChanges:\n${diffDescription}`,
+          content: `File: ${fileChange.filename}\n\n${
+            fileChange.fullContent ? 'Full file content:\n' + fileChange.fullContent + '\n\n' : ''
+          }Changes:\n${diffDescription}`,
         },
       ],
     });
@@ -88,6 +90,8 @@ export class OpenAIService {
       - SHOULD NOT provide unnecessary comments and information
       - MUST reference line numbers from the new file for additions/modifications
       - MUST use the actual line numbers from the diff hunks provided
+      - MUST use the full file content when it is provided, to better understand the context and impact of changes
+      - MUST consider the surrounding code context when analyzing changes
 
       #Answering Rules#
       Follow in the strict order, you:
