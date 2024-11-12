@@ -23,6 +23,14 @@ inputs:
     description: 'Whether to scan the entire PR or just the diff'
     required: false
     default: 'false'
+  enable-reply-to-comments:
+    description: 'Enable bot to reply to PR comments'
+    required: false
+    default: 'false'
+  include-project-prompts-in-replies:
+    description: 'Include project prompts in reply analysis'
+    required: false
+    default: 'false'
 runs:
   using: 'node20'
   main: 'dist/index.js'

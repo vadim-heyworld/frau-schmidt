@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import { OpenAI } from 'openai';
 
-import { FileChange, ReviewComment } from '../types/index.js';
+import { CommentReply, FileChange, ReviewComment } from '../types/index.js';
 
 export class OpenAIService {
   private readonly model: string;
@@ -70,6 +70,70 @@ export class OpenAIService {
     return response.choices[0].message.content || '';
   }
 
+  async analyzeReply(reply: CommentReply, projectPrompts?: string): Promise<string> {
+    const response = await this.openai.chat.completions.create({
+      model: this.model,
+      messages: [
+        {
+          role: 'system',
+          content: this.buildReplyPrompt(
+            reply.originalComment.body,
+            reply.userLogin,
+            reply.commentContext.lineContent,
+            reply.commentContext.diffContext,
+            projectPrompts
+          ),
+        },
+        {
+          role: 'user',
+          content: `
+          Original Comment: ${reply.originalComment.body}
+          User Reply: ${reply.replyComment.body}
+          User Login: ${reply.userLogin}
+          `,
+        },
+      ],
+    });
+
+    return response.choices[0].message.content || '';
+  }
+
+  private buildReplyPrompt(
+    originalComment: string,
+    userLogin: string,
+    lineContent: string,
+    diffContext: string,
+    projectPrompts?: string
+  ): string {
+    return `
+        You are a helpful and professional code reviewer responding to a comment from user @${userLogin}.
+
+        Context:
+        - Original line of code where you put your initial comment: ${lineContent}
+        - Surrounding diff context: ${diffContext}
+        - Your original comment: ${originalComment}
+        ${projectPrompts ? `\nProject Guidelines:\n${projectPrompts}` : ''}
+
+        #INSTRUCTIONS#
+        You MUST:
+        - Be concise and specific in your response
+        - Address the user's concerns directly
+        - Provide clear explanations
+        - Stay focused on the technical aspects
+        - Be professional and constructive
+        - Provide concrete examples when needed
+        - Use emojis to convey tone when appropriate (✅ - DO, (positive, correct code example), ❌ - DON'T (negative, wrong code example), ⚠️ - WARNING, 📝 - NOTE, 🙋 - QUESTION. 🤔 - SUGGESTION)
+        - Consider whether the user is the PR author or another reviewer and adjust your tone accordingly
+
+        You MUST NOT:
+        - Be rude or dismissive
+        - Provide incorrect information
+        - Stray from the original context
+        - Make assumptions about code not shown
+        - Treat all users differently in terms of technical accuracy
+      `;
+  }
+
   private buildSystemPrompt(projectPrompts: string): string {
     return `
       You are the most clever and intelligent developer in our team who ALWAYS follows all the provided guidelines and rules.
@@ -99,7 +163,9 @@ export class OpenAIService {
       2. MUST NOT tell me about the changes that were made by author, only analyze the changes
       3. MUST combine your deep knowledge of the topic and clear thinking
       4. MUST answer the question in a natural, human-like manner
-      5. MUST NOT provide unnecessary information`;
+      5. MUST NOT provide unnecessary information
+      6. Use emojis to convey tone when appropriate (✅ - DO, (positive), ❌ - DON'T (negative), ⚠️ - WARNING, 📝 - NOTE, 🙋 - QUESTION. 🤔 - SUGGESTION)
+      `;
   }
 
   private buildPRInfoPrompt(): string {
@@ -115,6 +181,7 @@ export class OpenAIService {
       - Check if the PR description is adequate
       - You MUST Provide constructive feedback
       - You MUST be concise and specific in your analysis
+      - Use emojis to convey tone when appropriate (✅ - DO, (positive), ❌ - DON'T (negative), ⚠️ - WARNING, 📝 - NOTE, 🙋 - QUESTION. 🤔 - SUGGESTION)
     `;
   }
 
