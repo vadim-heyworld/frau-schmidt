@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { PRDetails } from '../types/index.js';
+import { CommentReply, PRDetails } from '../types/index.js';
 export declare class GitHubService {
     private readonly octokit;
     constructor(octokit: Octokit);
@@ -19,5 +19,15 @@ export declare class GitHubService {
         owner: string;
         repo: string;
     }, prNumber: number): Promise<PRDetails>;
+    getCommentReplies(repo: {
+        owner: string;
+        repo: string;
+    }, prNumber: number, botUsername: string): Promise<CommentReply[]>;
+    replyToComment(repo: {
+        owner: string;
+        repo: string;
+    }, prNumber: number, inReplyToId: number, body: string, userLogin: string): Promise<void>;
+    private getDiffContext;
+    private getLineContent;
 }
 //# sourceMappingURL=gitHub.d.ts.map

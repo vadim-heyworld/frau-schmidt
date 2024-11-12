@@ -1,4 +1,4 @@
-# PHP Style Guide
+clea# PHP Style Guide
 We MUST follow PSR-12 for PHP code styling and MUST use PHP 8.2 syntax
 
 ## 1. Code Structure

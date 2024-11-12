@@ -8,6 +8,8 @@ This GitHub Action performs an AI-powered code review on pull requests using Ope
 - Project-specific review guidelines
 - Multi-file PR support
 - Inline comments on specific code changes
+- Replying to review comments that mention the bot
+- Possibility to include the whole context of the PR in the review
 
 ## Setup
 
@@ -44,10 +46,15 @@ name: AI PR Review
 on:
   pull_request:
     types: [opened, synchronize]
+  pull_request_review_comment:
+    types: [created]
 
 jobs:
   review:
     runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'pull_request') ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@frau-schmidt'))
     steps:
       - uses: actions/checkout@v4
       - name: AI PR Review
@@ -60,6 +67,9 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           installation-id: ${{ secrets.APP_INSTALLATION_ID }}
+          full-scan: 'false|true'
+          enable-replies: 'false|true'
+          include-project-prompts-in-replies: 'false|true'
 ```
 
 
@@ -92,7 +102,7 @@ You can name the files anything you like, but make it descriptive for your proje
 The content of these files will be included in the AI's prompt, allowing you to specify project-specific coding standards, PR guidelines, or any other relevant information.
 
 ### Modifying the AI prompt
-To change the base prompt or how project-specific prompts are incorporated, modify the `analyzePRChanges` and `analyzePRInfo` functions in `src/index.ts`.
+To change the base prompt or how project-specific prompts are incorporated, modify the `analyzePRChanges`, `analyzeReply` and `analyzePRInfo` functions in `src/services/openAI.ts`.
 
 ## Contributing
 
