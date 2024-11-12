@@ -23,7 +23,7 @@ inputs:
     description: 'Whether to scan the entire PR or just the diff'
     required: false
     default: 'false'
-  enable-reply-to-comments:
+  enable-replies:
     description: 'Enable bot to reply to PR comments'
     required: false
     default: 'false'
