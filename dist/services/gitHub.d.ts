@@ -2,7 +2,8 @@ import { Octokit } from '@octokit/rest';
 import { CommentReply, PRDetails } from '../types/index.js';
 export declare class GitHubService {
     private readonly octokit;
-    constructor(octokit: Octokit);
+    private readonly botUsername;
+    constructor(octokit: Octokit, botUsername: string);
     getFileContent(repo: {
         owner: string;
         repo: string;

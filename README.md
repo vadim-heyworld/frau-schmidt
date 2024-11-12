@@ -1,6 +1,6 @@
-# AI PR Review GitHub Action
+# Frau Schmidt GitHub Action
 
-This GitHub Action performs an AI-powered code review on pull requests using OpenAI's GPT-4 and Anthropic's Claude models. It provides intelligent, context-aware feedback on your code changes, helping to improve code quality and catch potential issues early in the development process.
+This GitHub Action performs an AI-powered code review on pull requests using OpenAI's GPT-4 and Anthropic's Claude (WIP) models. It provides intelligent, context-aware feedback on your code changes, helping to improve code quality and catch potential issues early in the development process.
 
 ## Features
 
@@ -42,7 +42,7 @@ Commit your changes, push to GitHub, and create a new release in your repository
 To use this action in your repositories, create a new workflow file (e.g., `.github/workflows/ai-pr-review.yml`) with the following content:
 
 ```yaml
-name: AI PR Review
+name: Frau Schmidt AI PR Review
 on:
   pull_request:
     types: [opened, synchronize]
@@ -53,17 +53,18 @@ jobs:
   review:
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'pull_request') ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@frau-schmidt'))
+          github.event_name == 'pull_request' ||
+          (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, 'frau-schmidt')) ||
+          (github.event_name == 'issue_comment' && contains(github.event.comment.body, 'frau-schmidt')
     steps:
       - uses: actions/checkout@v4
       - name: AI PR Review
-        uses: heyworldgmbh/pr-review-action@v1
+        uses: heyworldgmbh/frau-schmidt@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           project-name: ${{ github.event.repository.name }} # CAN be replaced with a static name of the prompts subdir, e.g. 'my-project'
-          openai-model: 'gpt-4o-mini'
+          openai-model: 'gpt-4o|gpt-4o-mini|o1-mini|o1-preview'
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           installation-id: ${{ secrets.APP_INSTALLATION_ID }}
