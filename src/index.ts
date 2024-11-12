@@ -11,14 +11,14 @@ import { readProjectPrompts } from './utils/prompt.js';
 
 async function run(): Promise<void> {
   try {
+    const botUsername = 'frau-schmidt';
     const { octokit, openai, model } = initializeServices();
-    const githubService = new GitHubService(octokit);
+    const githubService = new GitHubService(octokit, botUsername);
     const openAIService = new OpenAIService(openai, model);
     const fullScan = core.getBooleanInput('full-scan') || false;
     const enableReplies = core.getBooleanInput('enable-replies') || false;
     const includeProjectPromptsInReplies =
       core.getBooleanInput('include-project-prompts-in-replies') || false;
-
     const context = github.context;
     if (!context.payload.pull_request) {
       core.setFailed('This action can only be run on pull requests');
@@ -72,16 +72,25 @@ async function run(): Promise<void> {
       }
     }
 
-    if (context.eventName === 'pull_request_review_comment' && enableReplies) {
+    if (
+      (context.eventName === 'pull_request_review_comment' ||
+        context.eventName === 'issue_comment') &&
+      enableReplies
+    ) {
       const comment = context.payload.comment;
-      if (!comment?.body || !comment.body.includes('@frau-schmidt')) {
+      if (!comment?.body || !comment.body.includes('@' + botUsername)) {
         return;
       }
+
+      core.info(
+        `Received a comment on PR ${prNumber} from @${context.payload.comment?.user?.login}`
+      );
+
       const projectPrompts = includeProjectPromptsInReplies
         ? readProjectPrompts(core.getInput('project-name'))
         : undefined;
 
-      const replies = await githubService.getCommentReplies(repo, prNumber, 'frau-schmidt');
+      const replies = await githubService.getCommentReplies(repo, prNumber, botUsername);
 
       for (const reply of replies) {
         const response = await openAIService.analyzeReply(reply, projectPrompts);

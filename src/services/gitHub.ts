@@ -8,9 +8,11 @@ import { parsePatch } from '../utils/diffParser.js';
 
 export class GitHubService {
   private readonly octokit: Octokit;
+  private readonly botUsername: string = 'frau-schmidt';
 
-  constructor(octokit: Octokit) {
+  constructor(octokit: Octokit, botUsername: string) {
     this.octokit = octokit;
+    this.botUsername = botUsername;
   }
 
   async getFileContent(
@@ -87,7 +89,7 @@ export class GitHubService {
         (a, b) =>
           new Date(b.submitted_at || '').getTime() - new Date(a.submitted_at || '').getTime()
       )
-      .filter(review => review.user?.login === 'frau-schmidt');
+      .filter(review => review.user?.login === this.botUsername);
 
     const lastBotReview = botReviews[0];
     const lastReviewCommitId = lastBotReview?.commit_id ?? undefined;
