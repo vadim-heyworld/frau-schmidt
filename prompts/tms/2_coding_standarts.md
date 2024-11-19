@@ -86,6 +86,7 @@ public function retrieve(): void
         throw new ConnectionException('Database connection failed');
     }
 }
+```
 
 
 ## 2. Code Organization
