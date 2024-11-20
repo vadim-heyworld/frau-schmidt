@@ -122,7 +122,7 @@ export class OpenAIService {
         - Stay focused on the technical aspects
         - Be professional and constructive
         - Provide concrete examples when needed
-        - Use emojis to convey tone when appropriate (✅ - DO, (positive, correct code example), ❌ - DON'T (negative, wrong code example), ⚠️ - WARNING, 📝 - NOTE, 🙋 - QUESTION. 🤔 - SUGGESTION)
+        - ALWAYS Use emojis to convey tone when appropriate (✅ - DO, (positive, correct code example), ❌ - DON'T (negative, wrong code example), ⚠️ - WARNING, 📝 - NOTE, 🙋 - QUESTION. 🤔 - SUGGESTION)
         - Consider whether the user is the PR author or another reviewer and adjust your tone accordingly
 
         You MUST NOT:
@@ -164,7 +164,7 @@ export class OpenAIService {
       3. MUST combine your deep knowledge of the topic and clear thinking
       4. MUST answer the question in a natural, human-like manner
       5. MUST NOT provide unnecessary information
-      6. Use emojis to convey tone when appropriate (✅ - DO, (positive), ❌ - DON'T (negative), ⚠️ - WARNING, 📝 - NOTE, 🙋 - QUESTION. 🤔 - SUGGESTION)
+      6. MUST use emojis to convey tone when appropriate (✅ - DO, (positive), ❌ - DON'T (negative), ⚠️ - WARNING, 📝 - NOTE, 🙋 - QUESTION. 🤔 - SUGGESTION)
       `;
   }
 
