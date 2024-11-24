@@ -134,14 +134,15 @@ export class GitHubService {
     });
 
     const replies: CommentReply[] = [];
-
+    core.info(`Found ${comments.length} comments`);
     for (const comment of comments) {
-      if (
-        comment.in_reply_to_id &&
-        comment.body?.includes(`@${botUsername}`) &&
-        comment.user?.login !== botUsername // Exclude bot's own comments
-      ) {
+      if (comment.body?.includes(`/schmidt`) && comment.user?.login !== botUsername) {
+        core.info(`Found user's comment: ${comment.body_text}`);
         const originalComment = comments.find(c => c.id === comment.in_reply_to_id);
+        if (originalComment?.user?.login !== botUsername) {
+          continue;
+        }
+
         if (originalComment?.user?.login === botUsername) {
           const lineNumber = comment.original_line || comment.line;
           if (typeof lineNumber !== 'number') {

@@ -17,8 +17,8 @@ async function run(): Promise<void> {
     const openAIService = new OpenAIService(openai, model);
     const fullScan = core.getBooleanInput('full-scan') || false;
     const enableReplies = core.getBooleanInput('enable-replies') || false;
-    const includeProjectPromptsInReplies =
-      core.getBooleanInput('include-project-prompts-in-replies') || false;
+    // const includeProjectPromptsInReplies =
+    //   core.getBooleanInput('include-project-prompts-in-replies') || false;
     const context = github.context;
     if (!context.payload.pull_request) {
       core.setFailed('This action can only be run on pull requests');
@@ -78,7 +78,7 @@ async function run(): Promise<void> {
       enableReplies
     ) {
       const comment = context.payload.comment;
-      if (!comment?.body || !comment.body.includes('@' + botUsername)) {
+      if (!comment?.body || !comment.body.includes('/explain')) {
         return;
       }
 
@@ -86,6 +86,9 @@ async function run(): Promise<void> {
         `Received a comment on PR ${prNumber} from @${context.payload.comment?.user?.login}`
       );
 
+      core.info(`Comment data: ${JSON.stringify(context.payload.comment)}`);
+
+      /*
       const projectPrompts = includeProjectPromptsInReplies
         ? readProjectPrompts(core.getInput('project-name'))
         : undefined;
@@ -106,7 +109,7 @@ async function run(): Promise<void> {
         core.info(
           `Replied to ${reply.isPRAuthor ? 'PR author' : 'reviewer'} @${reply.userLogin} on comment ${reply.replyComment.id}`
         );
-      }
+        }*/
     }
   } catch (error) {
     core.setFailed(`Action failed: ${error}`);
