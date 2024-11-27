@@ -17,8 +17,8 @@ async function run(): Promise<void> {
     const openAIService = new OpenAIService(openai, model);
     const fullScan = core.getBooleanInput('full-scan') || false;
     const enableReplies = core.getBooleanInput('enable-replies') || false;
-    // const includeProjectPromptsInReplies =
-    //   core.getBooleanInput('include-project-prompts-in-replies') || false;
+    const includeProjectPromptsInReplies =
+      core.getBooleanInput('include-project-prompts-in-replies') || false;
     const context = github.context;
     if (!context.payload.pull_request) {
       core.setFailed('This action can only be run on pull requests');
@@ -72,13 +72,9 @@ async function run(): Promise<void> {
       }
     }
 
-    if (
-      (context.eventName === 'pull_request_review_comment' ||
-        context.eventName === 'issue_comment') &&
-      enableReplies
-    ) {
+    if (context.eventName === 'pull_request_review_comment' && enableReplies) {
       const comment = context.payload.comment;
-      if (!comment?.body || !comment.body.includes('/explain')) {
+      if (!comment?.body || !comment.body.includes('/why')) {
         return;
       }
 
@@ -88,28 +84,31 @@ async function run(): Promise<void> {
 
       core.info(`Comment data: ${JSON.stringify(context.payload.comment)}`);
 
-      /*
       const projectPrompts = includeProjectPromptsInReplies
         ? readProjectPrompts(core.getInput('project-name'))
         : undefined;
 
-      const replies = await githubService.getCommentReplies(repo, prNumber, botUsername);
+      const triggerComment = {
+        id: comment.id,
+        originalCommentId: comment.in_reply_to_id,
+        userLogin: comment.user.login,
+        isPrAuthor: comment.user.login === context.payload.pull_request.user.login,
+        body: comment.body,
+      };
+      const thread = await githubService.getCommentThread(repo, prNumber, triggerComment);
+      const response = await openAIService.analyzeReply(thread, projectPrompts);
 
-      for (const reply of replies) {
-        const response = await openAIService.analyzeReply(reply, projectPrompts);
+      await githubService.replyToComment(
+        repo,
+        prNumber,
+        thread.triggerComment.id,
+        thread.triggerComment.userLogin,
+        response
+      );
 
-        await githubService.replyToComment(
-          repo,
-          prNumber,
-          reply.replyComment.id,
-          response,
-          reply.userLogin
-        );
-
-        core.info(
-          `Replied to ${reply.isPRAuthor ? 'PR author' : 'reviewer'} @${reply.userLogin} on comment ${reply.replyComment.id}`
-        );
-        }*/
+      core.info(
+        `Replied to ${thread.triggerComment.isPrAuthor ? 'PR author' : 'reviewer'} @${thread.triggerComment.userLogin} on comment ${thread.triggerComment.id}`
+      );
     }
   } catch (error) {
     core.setFailed(`Action failed: ${error}`);

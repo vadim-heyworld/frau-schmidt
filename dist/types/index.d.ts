@@ -42,31 +42,18 @@ export interface PRDetails {
     branchName: string;
     commitMessages: string[];
 }
-export interface CommentContext {
-    lineContent: string;
-    diffContext: string;
-}
-export interface CommentReply {
-    replyComment: {
-        id: number;
-        body: string;
-        user: {
-            login: string;
-        };
-        path: string;
-        line: number;
-        original_line?: number;
-    };
-    originalComment: {
-        id: number;
-        body: string;
-        user: {
-            login: string;
-        };
-    };
-    commentContext: CommentContext;
+export interface Comment {
+    id: number;
+    originalCommentId: number;
     userLogin: string;
-    isPRAuthor: boolean;
+    isPrAuthor: boolean;
+    body: string;
+}
+export interface CommentThread {
+    diffHunks: DiffHunk[];
+    triggerComment: Comment;
+    comments: Comment[];
+    commentLine: string;
 }
 export {};
 //# sourceMappingURL=index.d.ts.map

@@ -54,8 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
           github.event_name == 'pull_request' ||
-          (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, 'frau-schmidt')) ||
-          (github.event_name == 'issue_comment' && contains(github.event.comment.body, 'frau-schmidt')
+          (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '/why'))
     steps:
       - uses: actions/checkout@v4
       - name: AI PR Review
