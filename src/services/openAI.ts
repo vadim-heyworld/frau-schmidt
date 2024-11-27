@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import { OpenAI } from 'openai';
 
-import { CommentReply, FileChange, ReviewComment } from '../types/index.js';
+import { CommentThread, FileChange, ReviewComment } from '../types/index.js';
 
 export class OpenAIService {
   private readonly model: string;
@@ -70,27 +70,22 @@ export class OpenAIService {
     return response.choices[0].message.content || '';
   }
 
-  async analyzeReply(reply: CommentReply, projectPrompts?: string): Promise<string> {
+  async analyzeReply(thread: CommentThread, projectPrompts?: string): Promise<string> {
     const response = await this.openai.chat.completions.create({
       model: this.model,
       messages: [
         {
           role: 'system',
           content: this.buildReplyPrompt(
-            reply.originalComment.body,
-            reply.userLogin,
-            reply.commentContext.lineContent,
-            reply.commentContext.diffContext,
+            thread.commentLine,
+            thread.diffHunks.map(hunk => hunk.content).join('\n'),
+            thread.comments.map(comment => `@${comment.userLogin} commented: ${comment.body}`),
             projectPrompts
           ),
         },
         {
           role: 'user',
-          content: `
-          Original Comment: ${reply.originalComment.body}
-          User Reply: ${reply.replyComment.body}
-          User Login: ${reply.userLogin}
-          `,
+          content: `${thread.triggerComment.userLogin} is asking: ${thread.triggerComment.body}`,
         },
       ],
     });
@@ -99,19 +94,18 @@ export class OpenAIService {
   }
 
   private buildReplyPrompt(
-    originalComment: string,
-    userLogin: string,
     lineContent: string,
     diffContext: string,
+    comments: string[],
     projectPrompts?: string
   ): string {
     return `
-        You are a helpful and professional code reviewer responding to a comment from user @${userLogin}.
+        You are a helpful and professional code reviewer responding to a comment from one of our developers.
 
         Context:
-        - Original line of code where you put your initial comment: ${lineContent}
-        - Surrounding diff context: ${diffContext}
-        - Your original comment: ${originalComment}
+        - Original line of code where the initial comment was done on: ${lineContent}
+        - Diff context: ${diffContext}
+        - Comments on this thread in DESCENDING order: ${comments.join('\n')}
         ${projectPrompts ? `\nProject Guidelines:\n${projectPrompts}` : ''}
 
         #INSTRUCTIONS#

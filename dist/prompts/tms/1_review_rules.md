@@ -6,30 +6,31 @@ YOU MUST ALWAUS FOLLOW THIS RULES TO REVIEW PRs
 YOU ALWAYS MUST USE THE TAGS FOR THE PR COMMENTS
 TAGS HAVE TO BE WRITTEN IN SQUARE BRACKETS ON THE FIRST LINE OF THE COMMENT
 TAGS HAVE TO BE WRITTEN IN BOLD
+TAGS SHOULD BE FOLLOWED BY A SPECIFIED EMOJI
 THERE MUST BE AN EMPTY LINE BETWEEN THE TAG AND THE COMMENT
 THE FOLLOWING TAGS ARE ALLOWED:
 
-[minor] - MINOR ISSUE, style issues, typos, or documentation improvements.
+[minor] 🤔 - MINOR ISSUE, style issues, typos, or documentation improvements.
 - Example: "[Minor] Variable name should be camelCase"
 - Action: [task] Change variable name to camelCase
 
-[medium] - MEDIUM ISSUE, code quality or minor logical issues. Not very severe but has to be fixed.
+[medium] ⚠️ - MEDIUM ISSUE, code quality or minor logical issues. Not very severe but has to be fixed.
 - Example: "This method should be split for better readability"
 - Action: Must be fixed before merge
 
-[major] - MAJOR ISSUE. Critical issues affecting functionality or security
+[major] ❌ - MAJOR ISSUE. Critical issues affecting functionality or security
 - Example: "This change breaks existing functionality"
 - Action: Must be fixed and re-reviewed before merge
 
-[discussion] - Architectural or design decisions
+[discussion] 💬 - Architectural or design decisions
 - Example: "Should we use Event instead of direct call?"
 - Action: Must be resolved through team discussion
 
-[question] - Clarification needed
+[question] 🙋 - Clarification needed
 - Example: "Why was this approach chosen?"
 - Action: Must be answered before approval
 
-[task] - Required changes
+[task] 📝  - Required changes
 - Format: Clear, actionable items
 - Must include: Expected outcome
 - Author must confirm completion

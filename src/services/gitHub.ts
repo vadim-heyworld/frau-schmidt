@@ -3,7 +3,7 @@ import { Buffer } from 'buffer';
 import * as core from '@actions/core';
 import { Octokit } from '@octokit/rest';
 
-import { CommentReply, PRDetails } from '../types/index.js';
+import { CommentThread, Comment, PRDetails, DiffHunk } from '../types/index.js';
 import { parsePatch } from '../utils/diffParser.js';
 
 export class GitHubService {
@@ -116,11 +116,11 @@ export class GitHubService {
     };
   }
 
-  async getCommentReplies(
+  async getCommentThread(
     repo: { owner: string; repo: string },
     prNumber: number,
-    botUsername: string
-  ): Promise<CommentReply[]> {
+    triggerComment: Comment
+  ): Promise<CommentThread> {
     const { data: pr } = await this.octokit.rest.pulls.get({
       ...repo,
       pull_number: prNumber,
@@ -128,120 +128,66 @@ export class GitHubService {
 
     const prAuthor = pr.user.login;
 
+    // TODO:: implement pagination
     const { data: comments } = await this.octokit.rest.pulls.listReviewComments({
       ...repo,
       pull_number: prNumber,
+      per_page: 100,
+      sort: 'created',
+      direction: 'desc', // latest first
     });
 
-    const replies: CommentReply[] = [];
+    const threadComments: Comment[] = [];
+    let diffHunks: DiffHunk[] = [];
+    let lineContent = '';
     core.info(`Found ${comments.length} comments`);
     for (const comment of comments) {
-      if (comment.body?.includes(`/schmidt`) && comment.user?.login !== botUsername) {
-        core.info(`Found user's comment: ${comment.body_text}`);
-        const originalComment = comments.find(c => c.id === comment.in_reply_to_id);
-        if (originalComment?.user?.login !== botUsername) {
-          continue;
-        }
+      // first lets find the comment that triggered the bot, it should be the last comment with `/why` command
+      if (comment.id === triggerComment.id) {
+        core.info(`Found triggered comment: ${comment.body_text}`);
+        diffHunks = parsePatch(comment.diff_hunk);
+        lineContent = await this.getLineContent(repo, comment.path, comment.position ?? -1);
+        continue;
+      }
 
-        if (originalComment?.user?.login === botUsername) {
-          const lineNumber = comment.original_line || comment.line;
-          if (typeof lineNumber !== 'number') {
-            core.warning(`Unable to determine line number for comment ${comment.id}`);
-            continue;
-          }
-          const diffContext = await this.getDiffContext(repo, comment.path, lineNumber, prNumber);
+      // now let's find all other comments that are part of this thread
+      if (comment.in_reply_to_id === triggerComment.originalCommentId) {
+        const threadComment = {
+          id: comment.id,
+          originalCommentId: comment.in_reply_to_id,
+          userLogin: comment.user.login,
+          isPrAuthor: comment.user.login === prAuthor,
+          body: comment.body,
+        };
 
-          replies.push({
-            replyComment: {
-              id: comment.id,
-              body: comment.body,
-              user: {
-                login: comment.user.login,
-              },
-              path: comment.path,
-              line: lineNumber,
-              original_line: comment.original_line,
-            },
-            originalComment: {
-              id: originalComment.id,
-              body: originalComment.body,
-              user: {
-                login: originalComment.user.login,
-              },
-            },
-            commentContext: {
-              lineContent: await this.getLineContent(repo, comment.path, lineNumber),
-              diffContext,
-            },
-            userLogin: comment.user.login,
-            isPRAuthor: comment.user.login === prAuthor,
-          });
-        }
+        threadComments.push(threadComment);
       }
     }
 
-    return replies;
+    return {
+      diffHunks: diffHunks,
+      triggerComment: triggerComment,
+      comments: threadComments,
+      commentLine: lineContent,
+    };
   }
 
   async replyToComment(
     repo: { owner: string; repo: string },
     prNumber: number,
     inReplyToId: number,
-    body: string,
-    userLogin: string
+    replyToUser: string,
+    replyBody: string
   ): Promise<void> {
     try {
       await this.octokit.rest.pulls.createReplyForReviewComment({
         ...repo,
         pull_number: prNumber,
-        body: `@${userLogin} ${body}`,
+        body: `@${replyToUser} ${replyBody}`,
         comment_id: inReplyToId,
       });
     } catch (error) {
       core.warning(`Failed to create reply to comment: ${error}`);
-    }
-  }
-
-  private async getDiffContext(
-    repo: { owner: string; repo: string },
-    path: string,
-    line: number,
-    prNumber: number
-  ): Promise<string> {
-    try {
-      const { data: files } = await this.octokit.rest.pulls.listFiles({
-        ...repo,
-        pull_number: prNumber,
-        path,
-      });
-
-      const file = files.find(f => f.filename === path);
-      if (file?.patch) {
-        const hunks = parsePatch(file.patch);
-        const contextLines = [];
-        const CONTEXT_LINES = 3;
-
-        for (const hunk of hunks) {
-          const relevantChanges = hunk.changes.filter(
-            change => Math.abs(change.lineNumber - line) <= CONTEXT_LINES
-          );
-
-          if (relevantChanges.length > 0) {
-            const lineMarkers = relevantChanges.map(change => {
-              const prefix = change.type === 'add' ? '+' : change.type === 'del' ? '-' : ' ';
-              const lineNum = change.lineNumber === line ? '>' : ' ';
-              return `${lineNum}${prefix}${change.content}`;
-            });
-            contextLines.push(...lineMarkers);
-          }
-        }
-
-        return contextLines.join('\n');
-      }
-      return '';
-    } catch (error) {
-      core.warning(`Failed to get diff context: ${error}`);
-      return '';
     }
   }
 
