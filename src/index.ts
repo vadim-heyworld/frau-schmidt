@@ -32,19 +32,10 @@ async function run(): Promise<void> {
       const { files, commitId, prDescription, branchName, commitMessages } =
         await githubService.getPRDetails(repo, prNumber);
 
-      const prAnalysis = await openAIService.analyzePRInfo(
-        prDescription,
-        files.length,
-        branchName,
-        commitMessages
-      );
-
-      if (prAnalysis) {
-        await githubService.createPRComment(repo, prNumber, prAnalysis);
-      }
-
       const projectPrompts = readProjectPrompts(core.getInput('project-name'));
+      let commentsArr: string[] = [];
 
+      // 1. Analize PR file changes and create related comments
       for (const file of files) {
         const fileChange = processFileChange(file);
         if (fullScan) {
@@ -55,6 +46,7 @@ async function run(): Promise<void> {
         }
 
         const comments = await openAIService.analyzePRChanges(fileChange, projectPrompts);
+        commentsArr = commentsArr.concat(comments.map(c => c.comment));
 
         for (const comment of comments) {
           await githubService.createReviewComment(
@@ -69,6 +61,19 @@ async function run(): Promise<void> {
             `Created a comment on ${file.filename} at line ${comment.line} with: ${comment.comment}`
           );
         }
+      }
+
+      // 2. Analize PR metadata and comments which we made to prepare a summary comment
+      const prAnalysis = await openAIService.analyzePRInfo(
+        prDescription,
+        files.length,
+        branchName,
+        commitMessages,
+        commentsArr
+      );
+
+      if (prAnalysis) {
+        await githubService.createPRComment(repo, prNumber, prAnalysis);
       }
     }
 

@@ -44,7 +44,8 @@ export class OpenAIService {
     prDescription: string,
     fileCount: number,
     branchName: string,
-    commitMessages: string[]
+    commitMessages: string[],
+    commentsArr: string[]
   ): Promise<string> {
     const response = await this.openai.chat.completions.create({
       model: this.model,
@@ -61,7 +62,7 @@ export class OpenAIService {
           Number of files changed: ${fileCount}
           Branch name: ${branchName}
           Commit messages: ${commitMessages.join(', ')}
-          You MUST analyze the PR description and file count based on the provided guidelines.
+          Your comments: ${commentsArr.join('\n')}
           `,
         },
       ],
@@ -165,6 +166,7 @@ export class OpenAIService {
   private buildPRInfoPrompt(): string {
     return `
       You are an expert code reviewer. Analyze the given PR description and stats. Your comment HAS to be informative but short as possible.
+
       Follow these guidelines:
       - PR MUST NOT be larger than 30 files.
       - Optimally they SHOULD include no more than 20 files.
@@ -176,6 +178,11 @@ export class OpenAIService {
       - You MUST Provide constructive feedback
       - You MUST be concise and specific in your analysis
       - Use emojis to convey tone when appropriate (✅ - DO, (positive), ❌ - DON'T (negative), ⚠️ - WARNING, 📝 - NOTE, 🙋 - QUESTION. 🤔 - SUGGESTION)
+
+      You also MUST create a summary of your comments which you made during the review.
+      If the review contains mostly comments tagged as [minor] or [question], and the overall quality of the PR is good, make sure to praise the author for their work.
+      However, if the review includes several comments tagged as [medium] or [major], emphasize the importance of maintaining high standards in code writing
+      and PR preparation, and encourage the author to be more attentive in their work
     `;
   }
 
