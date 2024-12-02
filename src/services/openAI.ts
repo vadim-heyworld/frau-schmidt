@@ -30,9 +30,15 @@ export class OpenAIService {
         },
         {
           role: 'user',
-          content: `File: ${fileChange.filename}\n\n${
-            fileChange.fullContent ? 'Full file content:\n' + fileChange.fullContent + '\n\n' : ''
-          }Changes:\n${diffDescription}`,
+          content: `
+
+          File: ${fileChange.filename}\n\n${
+            fileChange.fullContent
+              ? 'TAKE THE FULL FILE CONTENT INTO COSIDERATION FOR THE LOGIC PURPOSES:\n' +
+                fileChange.fullContent +
+                '\n\n'
+              : ''
+          } REVIEW ONLY THESE FILE CHANGES:\n${diffDescription}`,
         },
       ],
     });
