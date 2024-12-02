@@ -61,12 +61,12 @@ jobs:
         uses: heyworldgmbh/frau-schmidt@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          openai-api-key: ${{ secrets.FRAU_SCHMIDT_OPENAI_API_KEY }}
           project-name: ${{ github.event.repository.name }} # CAN be replaced with a static name of the prompts subdir, e.g. 'my-project'
           openai-model: 'gpt-4o|gpt-4o-mini|o1-mini|o1-preview'
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          installation-id: ${{ secrets.APP_INSTALLATION_ID }}
+          app-id: ${{ secrets.FRAU_SCHMIDT_APP_ID }}
+          private-key: ${{ secrets.FRAU_SCHMIDT_APP_PRIVATE_KEY }}
+          installation-id: ${{ secrets.FRAU_SCHMIDT_APP_INSTALLATION_ID }}
           full-scan: 'false|true'
           enable-replies: 'false|true'
           include-project-prompts-in-replies: 'false|true'
@@ -76,16 +76,16 @@ jobs:
 ### Setting up secrets
 
 In the repository settings where you're using this action, go to "Secrets and variables" > "Actions" and add the following secrets:
-- `OPENAI_API_KEY`: The OpenAI API key
-- `APP_ID`: The GitHub App ID
-- `APP_PRIVATE_KEY`: The GitHub App private key
-- `APP_INSTALLATION_ID`: The GitHub App installation ID, that can be found in the URL of the GitHub App settings page
+- `FRAU_SCHMIDT_OPENAI_API_KEY`: The OpenAI API key
+- `FRAU_SCHMIDT_APP_ID`: The GitHub App ID
+- `FRAU_SCHMIDT_APP_PRIVATE_KEY`: The GitHub App private key
+- `FRAU_SCHMIDT_APP_INSTALLATION_ID`: The GitHub App installation ID, that can be found in the URL of the GitHub App settings page
 
 ## Customization
 
 ### Project-specific prompts
 
-You can customize the AI's review guidelines for each project.
+You MUST customize the AI's review guidelines for each project.
 Create a `prompts` directory in your action repository with the following structure:
 
 ```

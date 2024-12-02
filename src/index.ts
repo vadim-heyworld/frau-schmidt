@@ -4,10 +4,10 @@ import { createAppAuth } from '@octokit/auth-app';
 import { Octokit } from '@octokit/rest';
 import { OpenAI } from 'openai';
 
-import { GitHubService } from './services/gitHub.js';
-import { OpenAIService } from './services/openAI.js';
-import { processFileChange } from './utils/diffParser.js';
-import { readProjectPrompts } from './utils/prompt.js';
+import { GitHubService } from './services/github.js';
+import { OpenAIService } from './services/openai.js';
+import { processFileChange } from './utils/chagesProcessor.js';
+import { readProjectPrompts } from './utils/projectPrompts.js';
 
 async function run(): Promise<void> {
   try {
@@ -38,6 +38,7 @@ async function run(): Promise<void> {
       // 1. Analize PR file changes and create related comments
       for (const file of files) {
         const fileChange = processFileChange(file);
+        core.info(`Processing file: ${file.filename}`);
         if (fullScan) {
           const fileContent = await githubService.getFileContent(repo, file.filename, commitId);
           if (fileContent) {

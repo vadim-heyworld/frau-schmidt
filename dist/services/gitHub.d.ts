@@ -30,4 +30,4 @@ export declare class GitHubService {
     }, prNumber: number, inReplyToId: number, replyToUser: string, replyBody: string): Promise<void>;
     private getLineContent;
 }
-//# sourceMappingURL=gitHub.d.ts.map
+//# sourceMappingURL=github.d.ts.map

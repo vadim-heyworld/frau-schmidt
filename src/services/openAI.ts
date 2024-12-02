@@ -26,7 +26,7 @@ export class OpenAIService {
       messages: [
         {
           role: 'system',
-          content: this.buildSystemPrompt(projectPrompts),
+          content: this.projectPrompt(projectPrompts),
         },
         {
           role: 'user',
@@ -52,7 +52,7 @@ export class OpenAIService {
       messages: [
         {
           role: 'system',
-          content: this.buildPRInfoPrompt(),
+          content: this.summaryPrompt(),
         },
         {
           role: 'user',
@@ -77,7 +77,7 @@ export class OpenAIService {
       messages: [
         {
           role: 'system',
-          content: this.buildReplyPrompt(
+          content: this.replyPrompt(
             thread.commentLine,
             thread.diffHunks.map(hunk => hunk.content).join('\n'),
             thread.comments.map(comment => `@${comment.userLogin} commented: ${comment.body}`),
@@ -94,7 +94,7 @@ export class OpenAIService {
     return response.choices[0].message.content || '';
   }
 
-  private buildReplyPrompt(
+  private replyPrompt(
     lineContent: string,
     diffContext: string,
     comments: string[],
@@ -119,6 +119,7 @@ export class OpenAIService {
         - Provide concrete examples when needed
         - ALWAYS Use emojis to convey tone when appropriate (✅ - DO, (positive, correct code example), ❌ - DON'T (negative, wrong code example), ⚠️ - WARNING, 📝 - NOTE, 🙋 - QUESTION. 🤔 - SUGGESTION)
         - Consider whether the user is the PR author or another reviewer and adjust your tone accordingly
+        - Check that your initial comment was correct, sometimes you do make mistakes
 
         You MUST NOT:
         - Be rude or dismissive
@@ -129,7 +130,7 @@ export class OpenAIService {
       `;
   }
 
-  private buildSystemPrompt(projectPrompts: string): string {
+  private projectPrompt(projectPrompts: string): string {
     return `
       You are the most clever and intelligent developer in our team who ALWAYS follows all the provided guidelines and rules.
       Review the given changes and follow the following instructions:
@@ -137,6 +138,7 @@ export class OpenAIService {
       #INSTRUCTIONS#
       You:
       - MUST ANALYZE AND FLAG EVERY SINGLE VIOLATION of the guidelines provided in:\n${projectPrompts}
+      - MUST NOT IGNORE any of the provided guidelines!
       - MUST NEVER HALLUCINATE
       - MUST NOT SKIP OR IGNORE any naming convention violations
       - DENIED to overlook the critical context
@@ -163,7 +165,7 @@ export class OpenAIService {
       `;
   }
 
-  private buildPRInfoPrompt(): string {
+  private summaryPrompt(): string {
     return `
       You are an expert code reviewer. Analyze the given PR description and stats. Your comment HAS to be informative but short as possible.
 

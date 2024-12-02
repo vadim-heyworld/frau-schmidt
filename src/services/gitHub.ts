@@ -4,7 +4,7 @@ import * as core from '@actions/core';
 import { Octokit } from '@octokit/rest';
 
 import { CommentThread, Comment, PRDetails, DiffHunk } from '../types/index.js';
-import { parsePatch } from '../utils/diffParser.js';
+import { parsePatch } from '../utils/chagesProcessor.js';
 
 export class GitHubService {
   private readonly octokit: Octokit;
@@ -144,7 +144,7 @@ export class GitHubService {
     for (const comment of comments) {
       // first lets find the comment that triggered the bot, it should be the last comment with `/why` command
       if (comment.id === triggerComment.id) {
-        core.info(`Found triggered comment: ${comment.body_text}`);
+        core.info(`Found triggered comment: ${comment.body}`);
         diffHunks = parsePatch(comment.diff_hunk);
         lineContent = await this.getLineContent(repo, comment.path, comment.position ?? -1);
         continue;

@@ -7,9 +7,9 @@ export declare class OpenAIService {
     analyzePRChanges(fileChange: FileChange, projectPrompts: string): Promise<ReviewComment[]>;
     analyzePRInfo(prDescription: string, fileCount: number, branchName: string, commitMessages: string[], commentsArr: string[]): Promise<string>;
     analyzeReply(thread: CommentThread, projectPrompts?: string): Promise<string>;
-    private buildReplyPrompt;
-    private buildSystemPrompt;
-    private buildPRInfoPrompt;
+    private replyPrompt;
+    private projectPrompt;
+    private summaryPrompt;
     private parseResponse;
 }
-//# sourceMappingURL=openAI.d.ts.map
+//# sourceMappingURL=openai.d.ts.map

@@ -3,8 +3,8 @@ We MUST follow PSR-12 for PHP code styling and MUST use PHP 8.2 syntax
 
 ## 1. Code Structure
 ### File Organization
-✅ REQUIRED:
-- declare(strict_types=1) must be first
+✅ REQUIRED (MUST):
+- declare(strict_types=1) MUST be first line after opening PHP tag
 - No content before opening PHP tag
 - Use statements must be:
   - Alphabetically sorted
@@ -29,14 +29,20 @@ We MUST follow PSR-12 for PHP code styling and MUST use PHP 8.2 syntax
 - Mix concerns in single class
 
 ### Method Organization
-✅ Required Format:
+✅ Required (MUST) Format:
 ```php
 public function methodName(
     Type $param1,
     ?Type $param2 = null
 ): ReturnType {
+    // Opening brace MUST be on the same line with return type ONLY if multi-line arguments list
     // One line space before and after function
     // No blank line after opening brace
+}
+
+public function methodName(Type $param1, ?Type $param2 = null): ReturnType
+{
+    // Opening brace ALWAYS MUST be on the new line if one-line arguments list
 }
 ```
 
