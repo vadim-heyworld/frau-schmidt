@@ -53,7 +53,11 @@ async function run(): Promise<void> {
 
         // if fullScan is enabled, we need to fetch the full file content to analyze it besides the diff
         if (fullScan) {
-          const fileContent = await githubService.getFileContent(repo, file.filename, file.sha);
+          const fileContent = await githubService.getFileContent(
+            repo,
+            file.filename,
+            lastReviewedCommitSha ?? prDetails.commitId
+          );
           if (fileContent) {
             fileChange.fullContent = fileContent;
           }
