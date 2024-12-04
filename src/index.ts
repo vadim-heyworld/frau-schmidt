@@ -4,6 +4,8 @@ import { createAppAuth } from '@octokit/auth-app';
 import { Octokit } from '@octokit/rest';
 import { OpenAI } from 'openai';
 
+import { ReviewComment } from 'index.js';
+
 import { GitHubService } from './services/github.js';
 import { OpenAIService } from './services/openai.js';
 import { processFileChange } from './utils/chagesProcessor.js';
@@ -20,6 +22,7 @@ async function run(): Promise<void> {
     const includeProjectPromptsInReplies =
       core.getBooleanInput('include-project-prompts-in-replies') || false;
     const context = github.context;
+
     if (!context.payload.pull_request) {
       core.setFailed('This action can only be run on pull requests');
       return;
@@ -29,53 +32,44 @@ async function run(): Promise<void> {
     const repo = context.repo;
 
     if (context.eventName === 'pull_request') {
-      const { files, commitId, prDescription, branchName, commitMessages } =
-        await githubService.getPRDetails(repo, prNumber);
+      // 0. Get Last Reviewed Commit SHA
+      const lastReviewedCommitSha = await githubService.getLastReviewedCommitSha(repo, prNumber);
 
+      // 1. Get PR Details
+      const prDetails = await githubService.getPRDetails(repo, prNumber, lastReviewedCommitSha);
+      if (!prDetails || !prDetails.files || prDetails.files.length === 0) {
+        core.info('No changes in PR');
+        return;
+      }
+
+      // 2. Read project prompts
       const projectPrompts = readProjectPrompts(core.getInput('project-name'));
-      let commentsArr: string[] = [];
+      let commentsArr: ReviewComment[] = [];
 
-      // 1. Analize PR file changes and create related comments
-      for (const file of files) {
+      // 3. Analize PR file changes and collect related comments
+      for (const file of prDetails.files) {
         const fileChange = processFileChange(file);
         core.info(`Processing file: ${file.filename}`);
+
+        // if fullScan is enabled, we need to fetch the full file content to analyze it besides the diff
         if (fullScan) {
-          const fileContent = await githubService.getFileContent(repo, file.filename, commitId);
+          const fileContent = await githubService.getFileContent(repo, file.filename, file.sha);
           if (fileContent) {
             fileChange.fullContent = fileContent;
           }
         }
 
+        // Analyze file changes and create comments if needed
         const comments = await openAIService.analyzePRChanges(fileChange, projectPrompts);
-        commentsArr = commentsArr.concat(comments.map(c => c.comment));
-
-        for (const comment of comments) {
-          await githubService.createReviewComment(
-            repo,
-            prNumber,
-            commitId,
-            file.filename,
-            comment.comment,
-            comment.line
-          );
-          core.info(
-            `Created a comment on ${file.filename} at line ${comment.line} with: ${comment.comment}`
-          );
-        }
+        // Collect comments to finalize review and a summary comment
+        commentsArr = commentsArr.concat(comments);
       }
 
-      // 2. Analize PR metadata and comments which we made to prepare a summary comment
-      const prAnalysis = await openAIService.analyzePRInfo(
-        prDescription,
-        files.length,
-        branchName,
-        commitMessages,
-        commentsArr
-      );
+      // 4. Analize PR metadata and comments which we made to prepare a summary comment
+      const reviewSummary = await openAIService.analyzePRInfo(prDetails, commentsArr);
 
-      if (prAnalysis) {
-        await githubService.createPRComment(repo, prNumber, prAnalysis);
-      }
+      // 5. Submit review
+      await githubService.submitReview(repo, prNumber, commentsArr, reviewSummary);
     }
 
     if (context.eventName === 'pull_request_review_comment' && enableReplies) {

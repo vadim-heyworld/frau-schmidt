@@ -3,8 +3,8 @@ import { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods';
 export interface FileChange {
   filename: string;
   patch: string;
-  additions: { content: string; lineNumber: number }[];
-  deletions: { content: string; lineNumber: number }[];
+  additions: { content: string; position: number }[];
+  deletions: { content: string; position: number }[];
   hunks: DiffHunk[];
   fullContent?: string;
 }
@@ -21,12 +21,13 @@ export interface DiffHunk {
 export interface DiffChange {
   type: 'add' | 'del' | 'context';
   content: string;
-  lineNumber: number;
+  position: number;
 }
 
 export interface ReviewComment {
-  line: number;
-  comment: string;
+  position: number;
+  body: string;
+  path: string;
 }
 
 type PullRequestResponse = RestEndpointMethodTypes['pulls']['get']['response']['data'];
@@ -36,11 +37,10 @@ export type PullRequestFile = RestEndpointMethodTypes['pulls']['listFiles']['res
 export interface PRDetails {
   pullRequest: PullRequestResponse;
   commits: PullRequestCommit[];
-  files: PullRequestFile[];
+  files: PullRequestFile[] | undefined;
   commitId: string;
   prDescription: string;
   branchName: string;
-  commitMessages: string[];
 }
 
 export interface Comment {

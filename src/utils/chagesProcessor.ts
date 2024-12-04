@@ -6,7 +6,9 @@ export function parsePatch(patch: string): DiffHunk[] {
   const hunks: DiffHunk[] = [];
   const headerRegex = /^@@ -(\d+),?(\d+)? \+(\d+),?(\d+)? @@/;
 
-  let currentIndex = 0;
+  let index = -1;
+  let position = 0;
+
   patch.split('\n').forEach(line => {
     if (line.startsWith('@@')) {
       const match = line.match(headerRegex);
@@ -20,29 +22,31 @@ export function parsePatch(patch: string): DiffHunk[] {
           newLines: parseInt(newLines),
           changes: [],
         });
-        currentIndex = hunks.length - 1;
+        index += 1;
       }
     } else if (hunks.length > 0) {
-      const hunk = hunks[currentIndex];
+      const hunk = hunks[index];
       hunk.content += line + '\n';
+
+      position += 1;
 
       if (line.startsWith('+')) {
         hunk.changes.push({
           type: 'add',
           content: line.substring(1),
-          lineNumber: hunk.newStart + hunk.changes.filter(c => c.type !== 'del').length,
+          position: position,
         });
       } else if (line.startsWith('-')) {
         hunk.changes.push({
           type: 'del',
           content: line.substring(1),
-          lineNumber: hunk.oldStart + hunk.changes.filter(c => c.type !== 'add').length,
+          position: position,
         });
       } else if (line.length > 0 && !line.startsWith('\\')) {
         hunk.changes.push({
           type: 'context',
           content: line.substring(1),
-          lineNumber: hunk.newStart + hunk.changes.filter(c => c.type !== 'del').length,
+          position: position,
         });
       }
     }
@@ -53,20 +57,20 @@ export function parsePatch(patch: string): DiffHunk[] {
 
 export function processFileChange(file: PullRequestFile): FileChange {
   const hunks = parsePatch(file.patch || '');
-  const additions: { content: string; lineNumber: number }[] = [];
-  const deletions: { content: string; lineNumber: number }[] = [];
+  const additions: { content: string; position: number }[] = [];
+  const deletions: { content: string; position: number }[] = [];
 
   hunks.forEach(hunk => {
     hunk.changes.forEach(change => {
       if (change.type === 'add') {
         additions.push({
           content: change.content,
-          lineNumber: change.lineNumber,
+          position: change.position,
         });
       } else if (change.type === 'del') {
         deletions.push({
           content: change.content,
-          lineNumber: change.lineNumber,
+          position: change.position,
         });
       }
     });

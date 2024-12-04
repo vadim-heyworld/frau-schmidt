@@ -4,11 +4,11 @@ export interface FileChange {
     patch: string;
     additions: {
         content: string;
-        lineNumber: number;
+        position: number;
     }[];
     deletions: {
         content: string;
-        lineNumber: number;
+        position: number;
     }[];
     hunks: DiffHunk[];
     fullContent?: string;
@@ -24,11 +24,12 @@ export interface DiffHunk {
 export interface DiffChange {
     type: 'add' | 'del' | 'context';
     content: string;
-    lineNumber: number;
+    position: number;
 }
 export interface ReviewComment {
-    line: number;
-    comment: string;
+    position: number;
+    body: string;
+    path: string;
 }
 type PullRequestResponse = RestEndpointMethodTypes['pulls']['get']['response']['data'];
 type PullRequestCommit = RestEndpointMethodTypes['pulls']['listCommits']['response']['data'][0];
@@ -36,11 +37,10 @@ export type PullRequestFile = RestEndpointMethodTypes['pulls']['listFiles']['res
 export interface PRDetails {
     pullRequest: PullRequestResponse;
     commits: PullRequestCommit[];
-    files: PullRequestFile[];
+    files: PullRequestFile[] | undefined;
     commitId: string;
     prDescription: string;
     branchName: string;
-    commitMessages: string[];
 }
 export interface Comment {
     id: number;

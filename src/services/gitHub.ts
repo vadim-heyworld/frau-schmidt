@@ -3,7 +3,7 @@ import { Buffer } from 'buffer';
 import * as core from '@actions/core';
 import { Octokit } from '@octokit/rest';
 
-import { CommentThread, Comment, PRDetails, DiffHunk } from '../types/index.js';
+import { CommentThread, Comment, PRDetails, DiffHunk, ReviewComment } from '../types/index.js';
 import { parsePatch } from '../utils/chagesProcessor.js';
 
 export class GitHubService {
@@ -61,58 +61,62 @@ export class GitHubService {
     }
   }
 
-  async createPRComment(
+  async submitReview(
     repo: { owner: string; repo: string },
     prNumber: number,
-    body: string
+    comments: ReviewComment[],
+    summary: string
   ): Promise<void> {
-    await this.octokit.rest.issues.createComment({
+    await this.octokit.rest.pulls.createReview({
       ...repo,
-      issue_number: prNumber,
-      body,
+      pull_number: prNumber,
+      event: 'COMMENT',
+      body: summary,
+      comments: comments.map(comment => ({
+        body: comment.body,
+        path: comment.path,
+        position: comment.position,
+      })),
     });
   }
 
-  async getPRDetails(repo: { owner: string; repo: string }, prNumber: number): Promise<PRDetails> {
+  async getPRDetails(
+    repo: { owner: string; repo: string },
+    prNumber: number,
+    lastReviewedSha: string | null
+  ): Promise<PRDetails | null> {
     const { data: pullRequest } = await this.octokit.rest.pulls.get({
       ...repo,
       pull_number: prNumber,
     });
+    const latestSha = pullRequest.head.sha;
 
-    const { data: reviews } = await this.octokit.rest.pulls.listReviews({
+    if (lastReviewedSha === null) {
+      // No previous reviews; consider all changes
+      lastReviewedSha = pullRequest.base.sha;
+    }
+
+    if (latestSha === lastReviewedSha) {
+      // No new changes since the last review
+      return null;
+    }
+
+    const basehead = `${lastReviewedSha}...${latestSha}`;
+    const comparison = await this.octokit.repos.compareCommitsWithBasehead({
       ...repo,
-      pull_number: prNumber,
+      basehead: basehead,
     });
 
-    const botReviews = reviews
-      .sort(
-        (a, b) =>
-          new Date(b.submitted_at || '').getTime() - new Date(a.submitted_at || '').getTime()
-      )
-      .filter(review => review.user?.login === this.botUsername);
-
-    const lastBotReview = botReviews[0];
-    const lastReviewCommitId = lastBotReview?.commit_id ?? undefined;
-
-    const { data: files } = await this.octokit.rest.pulls.listFiles({
-      ...repo,
-      pull_number: prNumber,
-      ...(lastReviewCommitId && { base: lastReviewCommitId }),
-    });
-
-    const { data: commits } = await this.octokit.rest.pulls.listCommits({
-      ...repo,
-      pull_number: prNumber,
-    });
+    const newCommits = comparison.data.commits;
+    const changedFiles = comparison.data.files;
 
     return {
       pullRequest,
-      commits,
-      files,
+      commits: newCommits,
+      files: changedFiles,
       commitId: pullRequest.head.sha,
       prDescription: pullRequest.body || '',
       branchName: pullRequest.head.ref,
-      commitMessages: commits.map(commit => commit.commit.message),
     };
   }
 
@@ -189,6 +193,32 @@ export class GitHubService {
     } catch (error) {
       core.warning(`Failed to create reply to comment: ${error}`);
     }
+  }
+
+  async getLastReviewedCommitSha(
+    repo: { owner: string; repo: string },
+    prNumber: number
+  ): Promise<string | null> {
+    const reviewsResponse = await this.octokit.pulls.listReviews({
+      ...repo,
+      pull_number: prNumber,
+    });
+
+    const botReviews = reviewsResponse.data.filter(
+      review => review.user?.login === this.botUsername
+    );
+
+    if (botReviews.length === 0) {
+      // Bot has not reviewed this PR yet
+      return null;
+    }
+
+    // Find the latest review by the bot
+    const latestReview = botReviews.reduce((latest, review) => {
+      return new Date(review.submitted_at!) > new Date(latest.submitted_at!) ? review : latest;
+    });
+
+    return latestReview.commit_id;
   }
 
   private async getLineContent(

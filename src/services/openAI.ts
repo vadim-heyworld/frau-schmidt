@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import { OpenAI } from 'openai';
 
-import { CommentThread, FileChange, ReviewComment } from '../types/index.js';
+import { CommentThread, FileChange, PRDetails, ReviewComment } from '../types/index.js';
 
 export class OpenAIService {
   private readonly model: string;
@@ -14,8 +14,8 @@ export class OpenAIService {
 
   async analyzePRChanges(fileChange: FileChange, projectPrompts: string): Promise<ReviewComment[]> {
     const diffDescription = [
-      ...fileChange.deletions.map(del => `-[${del.lineNumber}] ${del.content}`),
-      ...fileChange.additions.map(add => `+[${add.lineNumber}] ${add.content}`),
+      ...fileChange.deletions.map(del => `-[${del.position}] ${del.content}`),
+      ...fileChange.additions.map(add => `+[${add.position}] ${add.content}`),
     ].join('\n');
 
     core.info(`Analyzing file: ${fileChange.filename}`);
@@ -31,7 +31,6 @@ export class OpenAIService {
         {
           role: 'user',
           content: `
-
           File: ${fileChange.filename}\n\n${
             fileChange.fullContent
               ? 'TAKE THE FULL FILE CONTENT INTO COSIDERATION FOR THE LOGIC PURPOSES:\n' +
@@ -46,13 +45,12 @@ export class OpenAIService {
     return this.parseResponse(response.choices[0].message.content || '', fileChange);
   }
 
-  async analyzePRInfo(
-    prDescription: string,
-    fileCount: number,
-    branchName: string,
-    commitMessages: string[],
-    commentsArr: string[]
-  ): Promise<string> {
+  async analyzePRInfo(prDetails: PRDetails, commentsArr: ReviewComment[]): Promise<string> {
+    const prDescription = prDetails.prDescription;
+    const fileCount = prDetails.files?.length || 0;
+    const branchName = prDetails.branchName;
+    const commitMessages = prDetails.commits.map(c => c.commit.message);
+
     const response = await this.openai.chat.completions.create({
       model: this.model,
       messages: [
@@ -68,7 +66,7 @@ export class OpenAIService {
           Number of files changed: ${fileCount}
           Branch name: ${branchName}
           Commit messages: ${commitMessages.join(', ')}
-          Your comments: ${commentsArr.join('\n')}
+          Your comments splitted by two empty lines: ${commentsArr.map(comment => comment.body).join('\n\n')}
           `,
         },
       ],
@@ -200,13 +198,13 @@ export class OpenAIService {
       .map(line => {
         const match = line.match(/^\[(\d+)\]:\s(.+)$/);
         if (match) {
-          const lineNumber = parseInt(match[1]);
+          const responsePosition = parseInt(match[1]);
           const isValidLine = fileChange.additions.some(
-            addition => addition.lineNumber === lineNumber
+            addition => addition.position === responsePosition
           );
 
           if (isValidLine) {
-            return { line: lineNumber, comment: match[2] };
+            return { position: responsePosition, body: match[2], path: fileChange.filename };
           }
         }
         return null;

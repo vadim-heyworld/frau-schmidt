@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { CommentThread, Comment, PRDetails } from '../types/index.js';
+import { CommentThread, Comment, PRDetails, ReviewComment } from '../types/index.js';
 export declare class GitHubService {
     private readonly octokit;
     private readonly botUsername;
@@ -12,14 +12,14 @@ export declare class GitHubService {
         owner: string;
         repo: string;
     }, prNumber: number, commitId: string, path: string, body: string, line: number): Promise<void>;
-    createPRComment(repo: {
+    submitReview(repo: {
         owner: string;
         repo: string;
-    }, prNumber: number, body: string): Promise<void>;
+    }, prNumber: number, comments: ReviewComment[], summary: string): Promise<void>;
     getPRDetails(repo: {
         owner: string;
         repo: string;
-    }, prNumber: number): Promise<PRDetails>;
+    }, prNumber: number, lastReviewedSha: string | null): Promise<PRDetails | null>;
     getCommentThread(repo: {
         owner: string;
         repo: string;
@@ -28,6 +28,10 @@ export declare class GitHubService {
         owner: string;
         repo: string;
     }, prNumber: number, inReplyToId: number, replyToUser: string, replyBody: string): Promise<void>;
+    getLastReviewedCommitSha(repo: {
+        owner: string;
+        repo: string;
+    }, prNumber: number): Promise<string | null>;
     private getLineContent;
 }
 //# sourceMappingURL=github.d.ts.map
