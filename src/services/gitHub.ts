@@ -8,7 +8,7 @@ import { parsePatch } from '../utils/chagesProcessor.js';
 
 export class GitHubService {
   private readonly octokit: Octokit;
-  private readonly botUsername: string = 'frau-schmidt[bot]';
+  private readonly botUsername: string;
 
   constructor(octokit: Octokit, botUsername: string) {
     this.octokit = octokit;
@@ -210,9 +210,6 @@ export class GitHubService {
     core.info(`Found ${reviewsResponse.data.length} reviews`);
 
     const botReviews = reviewsResponse.data.filter(review => {
-      core.info(`Review user login: ${review.user?.login}`);
-      core.info(`Bot user login: ${this.botUsername}`);
-      core.info(`Comparasion result: ${review.user?.login === this.botUsername}`);
       return review.user?.login === this.botUsername;
     });
 

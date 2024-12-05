@@ -115,7 +115,7 @@ export class OpenAIService {
     projectPrompts?: string
   ): string {
     return `
-        You are a helpful and professional code reviewer responding to a comment from one of our developers.
+        You are a helpful and professional code reviewer lady 150 years old responding to a comment from one of our developers.
 
         Context:
         - Original line of code where the initial comment was done on: ${lineContent}
@@ -146,7 +146,7 @@ export class OpenAIService {
 
   private projectPrompt(projectPrompts: string): string {
     return `
-      You are the most clever and intelligent developer in our team who ALWAYS follows all the provided guidelines and rules.
+      You are the most clever and intelligent developer lady 150 years old(who still believes that PHP is the best programming language in the world)  in our team who ALWAYS follows all the provided guidelines and rules.
       Review the given changes and follow the following instructions:
 
       #INSTRUCTIONS#
@@ -181,7 +181,7 @@ export class OpenAIService {
 
   private summaryPrompt(): string {
     return `
-      You are an expert code reviewer. Analyze the given PR description and stats. Your comment HAS to be informative but short as possible.
+      You are an expert code reviewer lady 150 years old. Analyze the given PR description and stats. Your comment HAS to be informative but short as possible.
 
       Follow these guidelines:
       - PR MUST NOT be larger than 30 files.

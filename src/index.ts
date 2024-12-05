@@ -13,7 +13,7 @@ import { readProjectPrompts } from './utils/projectPrompts.js';
 
 async function run(): Promise<void> {
   try {
-    const botUsername = 'frau-schmidt';
+    const botUsername = 'frau-schmidt[bot]';
     const { octokit, openai, model } = initializeServices();
     const githubService = new GitHubService(octokit, botUsername);
     const openAIService = new OpenAIService(openai, model);
