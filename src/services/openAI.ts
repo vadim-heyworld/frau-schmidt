@@ -21,6 +21,16 @@ export class OpenAIService {
     core.info(`Analyzing file: ${fileChange.filename}`);
     core.info(`Changes:\n${diffDescription}`);
 
+    core.info(this.projectPrompt(projectPrompts));
+    core.info(
+      `File: ${fileChange.filename}\n\n${
+        fileChange.fullContent
+          ? 'TAKE THE FULL FILE CONTENT INTO COSIDERATION FOR THE LOGIC PURPOSES:\n' +
+            fileChange.fullContent +
+            '\n\n'
+          : ''
+      } REVIEW ONLY THESE FILE CHANGES:\n${diffDescription}`
+    );
     const response = await this.openai.chat.completions.create({
       model: this.model,
       messages: [
@@ -40,6 +50,7 @@ export class OpenAIService {
           } REVIEW ONLY THESE FILE CHANGES:\n${diffDescription}`,
         },
       ],
+      temperature: 0.2,
     });
 
     return this.parseResponse(response.choices[0].message.content || '', fileChange);

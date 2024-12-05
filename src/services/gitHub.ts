@@ -207,9 +207,13 @@ export class GitHubService {
       pull_number: prNumber,
     });
 
+    core.info(`Found ${reviewsResponse.data.length} reviews`);
+
     const botReviews = reviewsResponse.data.filter(
       review => review.user?.login === this.botUsername
     );
+
+    core.info(`Found ${botReviews.length} reviews by the bot`);
 
     if (botReviews.length === 0) {
       core.info(`Bot has not reviewed PR ${prNumber} yet`);
@@ -220,6 +224,7 @@ export class GitHubService {
     const latestReview = botReviews.reduce((latest, review) => {
       return new Date(review.submitted_at!) > new Date(latest.submitted_at!) ? review : latest;
     });
+    core.info(`Latest review by the bot stats: ${JSON.stringify(latestReview)}`);
 
     return latestReview.commit_id;
   }
