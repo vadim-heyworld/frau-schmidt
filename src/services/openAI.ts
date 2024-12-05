@@ -21,7 +21,6 @@ export class OpenAIService {
     core.info(`Analyzing file: ${fileChange.filename}`);
     core.info(`Changes:\n${diffDescription}`);
 
-    core.info(this.projectPrompt(projectPrompts));
     core.info(
       `File: ${fileChange.filename}\n\n${
         fileChange.fullContent
@@ -50,7 +49,7 @@ export class OpenAIService {
           } REVIEW ONLY THESE FILE CHANGES:\n${diffDescription}`,
         },
       ],
-      temperature: 0.2,
+      temperature: 0.2, // I used 0.2 instead of 0 since frau Schimdt is a good developer but still can make mistakes because of her age
     });
 
     return this.parseResponse(response.choices[0].message.content || '', fileChange);
