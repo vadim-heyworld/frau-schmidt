@@ -90,14 +90,16 @@ export class GitHubService {
       pull_number: prNumber,
     });
     const latestSha = pullRequest.head.sha;
+    core.info(`Latest commit SHA: ${latestSha}`);
+    core.info(`Latest review commit: ${lastReviewedSha}`);
 
     if (lastReviewedSha === null) {
-      // No previous reviews; consider all changes
+      core.info(`No previous reviews; consider all changes`);
       lastReviewedSha = pullRequest.base.sha;
     }
 
     if (latestSha === lastReviewedSha) {
-      // No new changes since the last review
+      core.info(`No changes since the last review: ${lastReviewedSha}`);
       return null;
     }
 
@@ -105,9 +107,11 @@ export class GitHubService {
     const comparison = await this.octokit.repos.compareCommitsWithBasehead({
       ...repo,
       basehead: basehead,
+      per_page: 100,
     });
 
     const newCommits = comparison.data.commits;
+    core.info(`Found ${newCommits.length} new commits: ${newCommits.map(c => c.sha).join(', ')}`);
     const changedFiles = comparison.data.files;
 
     return {
@@ -146,7 +150,6 @@ export class GitHubService {
     let lineContent = '';
     core.info(`Found ${comments.length} comments`);
     for (const comment of comments) {
-      // first lets find the comment that triggered the bot, it should be the last comment with `/why` command
       if (comment.id === triggerComment.id) {
         core.info(`Found triggered comment: ${comment.body}`);
         diffHunks = parsePatch(comment.diff_hunk);
@@ -154,7 +157,7 @@ export class GitHubService {
         continue;
       }
 
-      // now let's find all other comments that are part of this thread
+      // let's find all other comments that are part of this thread
       if (comment.in_reply_to_id === triggerComment.originalCommentId) {
         const threadComment = {
           id: comment.id,
@@ -209,7 +212,7 @@ export class GitHubService {
     );
 
     if (botReviews.length === 0) {
-      // Bot has not reviewed this PR yet
+      core.info(`Bot has not reviewed PR ${prNumber} yet`);
       return null;
     }
 
