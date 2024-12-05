@@ -8,7 +8,7 @@ import { parsePatch } from '../utils/chagesProcessor.js';
 
 export class GitHubService {
   private readonly octokit: Octokit;
-  private readonly botUsername: string = 'frau-schmidt';
+  private readonly botUsername: string = 'frau-schmidt[bot]';
 
   constructor(octokit: Octokit, botUsername: string) {
     this.octokit = octokit;
