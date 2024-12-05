@@ -208,11 +208,13 @@ export class GitHubService {
     });
 
     core.info(`Found ${reviewsResponse.data.length} reviews`);
-    core.info(`Reviews data ${JSON.stringify(reviewsResponse.data)}`);
 
-    const botReviews = reviewsResponse.data.filter(
-      review => review.user?.login === this.botUsername
-    );
+    const botReviews = reviewsResponse.data.filter(review => {
+      core.info(`Review user login: ${review.user?.login}`);
+      core.info(`Bot user login: ${this.botUsername}`);
+      core.info(`Comparasion result: ${review.user?.login === this.botUsername}`);
+      return review.user?.login === this.botUsername;
+    });
 
     core.info(`Found ${botReviews.length} reviews by the bot`);
 
