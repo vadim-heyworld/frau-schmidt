@@ -49,7 +49,7 @@ export class OpenAIService {
           } REVIEW ONLY THESE FILE CHANGES:\n${diffDescription}`,
         },
       ],
-      temperature: 0.2, // I used 0.2 instead of 0 since frau Schimdt is a good developer but still can make mistakes because of her age
+      temperature: 0.0, // 1.0 by default, 0.0 is more deterministic
     });
 
     return this.parseResponse(response.choices[0].message.content || '', fileChange);

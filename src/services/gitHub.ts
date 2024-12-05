@@ -208,6 +208,7 @@ export class GitHubService {
     });
 
     core.info(`Found ${reviewsResponse.data.length} reviews`);
+    core.info(`Reviews data ${JSON.stringify(reviewsResponse.data)}`);
 
     const botReviews = reviewsResponse.data.filter(
       review => review.user?.login === this.botUsername
