@@ -41,6 +41,7 @@ export interface PRDetails {
   commitId: string;
   prDescription: string;
   branchName: string;
+  labels: string[];
 }
 
 export interface Comment {

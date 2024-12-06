@@ -31,6 +31,10 @@ inputs:
     description: 'Include project prompts in reply analysis'
     required: false
     default: 'false'
+  only-first:
+    description: 'Only allow one review per PR'
+    required: false
+    default: 'false'
 runs:
   using: 'node20'
   main: 'dist/index.js'

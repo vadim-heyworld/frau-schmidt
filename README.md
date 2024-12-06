@@ -70,7 +70,10 @@ jobs:
           full-scan: 'false|true'
           enable-replies: 'false|true'
           include-project-prompts-in-replies: 'false|true'
+          only-first: 'false|true'
 ```
+
+There is also possibility to skip the action for some PRs by adding a label `skip-bot-review` to the PR in advance before the action runs.
 
 
 ### Setting up secrets

@@ -21,6 +21,7 @@ async function run(): Promise<void> {
     const enableReplies = core.getBooleanInput('enable-replies') || false;
     const includeProjectPromptsInReplies =
       core.getBooleanInput('include-project-prompts-in-replies') || false;
+    const onlyFirstReview = core.getBooleanInput('only-first') || false;
     const context = github.context;
 
     if (!context.payload.pull_request) {
@@ -35,10 +36,20 @@ async function run(): Promise<void> {
       // 0. Get Last Reviewed Commit SHA
       const lastReviewedCommitSha = await githubService.getLastReviewedCommitSha(repo, prNumber);
 
+      if (onlyFirstReview && lastReviewedCommitSha) {
+        core.info('PR has already been reviewed, skipping');
+        return;
+      }
+
       // 1. Get PR Details
       const prDetails = await githubService.getPRDetails(repo, prNumber, lastReviewedCommitSha);
       if (!prDetails || !prDetails.files || prDetails.files.length === 0) {
         core.info('No changes in PR');
+        return;
+      }
+
+      if (prDetails.labels.includes('skip-bot-review')) {
+        core.info('PR has a skip-review label, skipping');
         return;
       }
 

@@ -121,6 +121,7 @@ export class GitHubService {
       commitId: pullRequest.head.sha,
       prDescription: pullRequest.body || '',
       branchName: pullRequest.head.ref,
+      labels: pullRequest.labels.map(label => label.name),
     };
   }
 
@@ -142,7 +143,7 @@ export class GitHubService {
       pull_number: prNumber,
       per_page: 100,
       sort: 'created',
-      direction: 'desc', // latest first
+      direction: 'desc',
     });
 
     const threadComments: Comment[] = [];
@@ -207,8 +208,6 @@ export class GitHubService {
       pull_number: prNumber,
     });
 
-    core.info(`Found ${reviewsResponse.data.length} reviews`);
-
     const botReviews = reviewsResponse.data.filter(review => {
       return review.user?.login === this.botUsername;
     });
@@ -220,11 +219,9 @@ export class GitHubService {
       return null;
     }
 
-    // Find the latest review by the bot
     const latestReview = botReviews.reduce((latest, review) => {
       return new Date(review.submitted_at!) > new Date(latest.submitted_at!) ? review : latest;
     });
-    core.info(`Latest review by the bot stats: ${JSON.stringify(latestReview)}`);
 
     return latestReview.commit_id;
   }
